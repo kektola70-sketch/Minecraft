@@ -1,158 +1,192 @@
 import * as THREE from 'three';
 
-// --- НАСТРОЙКИ ---
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+// --- ТВOИ КОНФИГ FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBdOHBV3JXlJgRM3pm3Id8BeGQ96bRZ1vs",
+  authDomain: "minecraft-34cd5.firebaseapp.com",
+  projectId: "minecraft-34cd5",
+  storageBucket: "minecraft-34cd5.firebasestorage.app",
+  messagingSenderId: "334775687884",
+  appId: "1:334775687884:web:46ea4b3315222280f3c069"
+};
 
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2(0, 0); // Центр экрана
+// Инициализация
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// Свет
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-sun.position.set(10, 20, 10);
-scene.add(sun);
+// --- ПЕРЕМЕННЫЕ ---
+let scene, camera, renderer, raycaster, blocks = [];
+let moveF = 0, moveR = 0, lon = 0, lat = 0;
+let velocityY = 0, isJumping = false;
+let selectedColor = 0x44aa44;
 
-// --- МИР ---
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x44aa44 });
-const dirtMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-const blocks = []; // Массив для хранения всех блоков мира
+// --- АККАУНТ И МЕНЮ ---
+window.showScreen = (id) => {
+    document.querySelectorAll('.screen, #ui-game').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'flex';
+    if(id === 'screen-worlds') updateWorldsList();
+};
 
-function createBlock(x, y, z, mat) {
-    const block = new THREE.Mesh(geometry, mat);
-    block.position.set(x, y, z);
-    scene.add(block);
-    blocks.push(block);
-}
-
-// Генерация пола
-for (let x = -8; x < 8; x++) {
-    for (let z = -8; z < 8; z++) {
-        createBlock(x, 0, z, grassMaterial);
+document.getElementById('btn-auth').onclick = async () => {
+    const nick = document.getElementById('input-nick').value.trim();
+    if(nick.length < 3) return alert("Ник слишком короткий!");
+    
+    try {
+        const userRef = db.collection("players").doc(nick);
+        await userRef.set({ lastSeen: Date.now() }, { merge: true });
+        localStorage.setItem('mc_nick', nick);
+        document.getElementById('display-nick').innerText = nick;
+        alert("Ник сохранен в Firebase!");
+        showScreen('screen-menu');
+    } catch(e) {
+        alert("Ошибка базы: " + e.message);
     }
+};
+
+// --- СПИСОК МИРОВ ---
+window.createNewWorld = () => {
+    const world = {
+        name: document.getElementById('world-name').value || "Мир",
+        seed: document.getElementById('world-seed').value || 123,
+        mode: document.getElementById('world-mode').value,
+        id: Date.now()
+    };
+    let worlds = JSON.parse(localStorage.getItem('mc_worlds') || '[]');
+    worlds.push(world);
+    localStorage.setItem('mc_worlds', JSON.stringify(worlds));
+    initGame(world);
+};
+
+function updateWorldsList() {
+    const list = document.getElementById('worlds-list');
+    list.innerHTML = '';
+    let worlds = JSON.parse(localStorage.getItem('mc_worlds') || '[]');
+    worlds.forEach(w => {
+        const btn = document.createElement('button');
+        btn.innerText = `${w.name} (${w.mode})`;
+        btn.onclick = () => initGame(w);
+        list.appendChild(btn);
+    });
 }
 
-camera.position.set(0, 2, 5);
+// --- ИГРА ---
+function initGame(worldData) {
+    document.getElementById('ui-game').style.display = 'block';
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
 
-// --- ЛОГИКА ИНВЕНТАРЯ ---
-let selectedSlot = 1;
-const placeBtn = document.getElementById('btn-place');
-const slots = document.querySelectorAll('.slot:not(.btn-inv)');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-slots.forEach(slot => {
-    slot.onclick = () => {
-        slots.forEach(s => s.classList.remove('active'));
-        slot.classList.add('active');
-        selectedSlot = slot.dataset.id;
-        
-        // Показываем кнопку "СТАВИТЬ" только если выбран слот с блоком (в нашем примере первые 3)
-        if (parseInt(selectedSlot) <= 3) {
-            placeBtn.style.display = 'block';
-        } else {
-            placeBtn.style.display = 'none';
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    raycaster = new THREE.Raycaster();
+
+    // Генерация мира
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x44aa44 });
+    const s = Number(worldData.seed);
+    
+    for(let x = -10; x < 10; x++) {
+        for(let z = -10; z < 10; z++) {
+            const h = Math.floor(Math.sin(x * 0.2 + s) * 1.5 + Math.cos(z * 0.2 + s) * 1.5);
+            const b = new THREE.Mesh(geo, mat);
+            b.position.set(x, h, z);
+            scene.add(b);
+            blocks.push(b);
+        }
+    }
+
+    camera.position.set(0, 5, 5);
+    setupControls();
+    animate();
+}
+
+function setupControls() {
+    // Джойстик
+    nipplejs.create({ zone: document.getElementById('joystick-container'), mode: 'static', position: {left: '60px', top: '60px'} })
+    .on('move', (e, d) => { moveF = d.vector.y; moveR = d.vector.x; })
+    .on('end', () => { moveF = 0; moveR = 0; });
+
+    // Обзор (БЕЗ инверсии)
+    let tx, ty;
+    document.addEventListener('touchstart', e => { if(e.touches[0].clientX > window.innerWidth/2){ tx = e.touches[0].clientX; ty = e.touches[0].clientY; }});
+    document.addEventListener('touchmove', e => {
+        for(let t of e.touches) {
+            if(t.clientX > window.innerWidth/2) {
+                lon += (t.clientX - tx) * 0.3;
+                lat += (t.clientY - ty) * 0.3;
+                lat = Math.max(-85, Math.min(85, lat));
+                tx = t.clientX; ty = t.clientY;
+            }
+        }
+    });
+
+    // Прыжок
+    document.getElementById('btn-jump').onclick = () => { if(!isJumping) { velocityY = 0.15; isJumping = true; }};
+
+    // Ломать/Ставить
+    document.getElementById('btn-break').onclick = () => {
+        raycaster.setFromCamera({x:0, y:0}, camera);
+        const hit = raycaster.intersectObjects(blocks);
+        if(hit.length > 0 && hit[0].distance < 5) {
+            scene.remove(hit[0].object);
+            blocks.splice(blocks.indexOf(hit[0].object), 1);
         }
     };
-});
 
-// Кнопка Инвентаря
-document.getElementById('open-inv').onclick = () => alert("Инвентарь открыт!");
+    document.getElementById('btn-place').onclick = () => {
+        raycaster.setFromCamera({x:0, y:0}, camera);
+        const hit = raycaster.intersectObjects(blocks);
+        if(hit.length > 0 && hit[0].distance < 5) {
+            const p = hit[0].object.position;
+            const n = hit[0].face.normal;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color: Number(selectedColor)}));
+            b.position.set(p.x+n.x, p.y+n.y, p.z+n.z);
+            scene.add(b);
+            blocks.push(b);
+        }
+    };
 
-// --- ДЕЙСТВИЯ: ЛОМАТЬ И СТАВИТЬ ---
-function getTargetBlock() {
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObjects(blocks);
-    return intersects.length > 0 ? intersects[0] : null;
+    // Слоты
+    document.querySelectorAll('.slot').forEach(s => {
+        s.onclick = () => {
+            document.querySelectorAll('.slot').forEach(sl => sl.classList.remove('active'));
+            s.classList.add('active');
+            selectedColor = s.dataset.color;
+        };
+    });
 }
 
-// ЛОМАТЬ
-document.getElementById('btn-break').onclick = () => {
-    const target = getTargetBlock();
-    if (target && target.distance < 5) {
-        scene.remove(target.object);
-        const index = blocks.indexOf(target.object);
-        if (index > -1) blocks.splice(index, 1);
-    }
-};
-
-// СТАВИТЬ
-placeBtn.onclick = () => {
-    const target = getTargetBlock();
-    if (target && target.distance < 5) {
-        const pos = target.object.position;
-        const norm = target.face.normal;
-        
-        // Определяем материал по слоту
-        let mat = grassMaterial;
-        if (selectedSlot == "2") mat = dirtMaterial;
-        
-        createBlock(pos.x + norm.x, pos.y + norm.y, pos.z + norm.z, mat);
-    }
-};
-
-// УДАР (просто анимация или лог)
-document.getElementById('btn-hit').onclick = () => {
-    console.log("Удар!");
-};
-
-// --- УПРАВЛЕНИЕ И ОБЗОР ---
-// (Код джойстика и обзора из прошлого шага)
-let moveForward = 0, moveRight = 0;
-const joystick = nipplejs.create({
-    zone: document.getElementById('joystick-container'),
-    mode: 'static', position: { left: '60px', top: '60px' },
-    color: 'white'
-});
-joystick.on('move', (e, d) => { moveForward = d.vector.y; moveRight = d.vector.x; });
-joystick.on('end', () => { moveForward = 0; moveRight = 0; });
-
-let lon = 0, lat = 0;
-let touchStartX = 0, touchStartY = 0;
-document.addEventListener('touchstart', (e) => {
-    if (e.touches[0].clientX > window.innerWidth / 2) {
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-    }
-});
-document.addEventListener('touchmove', (e) => {
-    for (let i = 0; i < e.touches.length; i++) {
-        if (e.touches[i].clientX > window.innerWidth / 2) {
-            lon -= (e.touches[i].clientX - touchStartX) * 0.2;
-            lat -= (e.touches[i].clientY - touchStartY) * 0.2;
-            lat = Math.max(-85, Math.min(85, lat));
-            touchStartX = e.touches[i].clientX; touchStartY = e.touches[i].clientY;
-        }
-    }
-});
-
 function animate() {
+    if(!renderer) return;
     requestAnimationFrame(animate);
-    
+
     // Камера
     const phi = THREE.MathUtils.degToRad(90 - lat);
     const theta = THREE.MathUtils.degToRad(lon);
     const target = new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position);
     camera.lookAt(target);
 
-    // Ходьба
-    if (moveForward !== 0 || moveRight !== 0) {
+    // Физика
+    velocityY -= 0.008;
+    camera.position.y += velocityY;
+    if(camera.position.y < 2.5) { camera.position.y = 2.5; velocityY = 0; isJumping = false; }
+
+    // Движение
+    if(moveF !== 0 || moveR !== 0) {
         const dir = new THREE.Vector3();
         camera.getWorldDirection(dir);
         dir.y = 0; dir.normalize();
         const side = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
-        camera.position.addScaledVector(dir, moveForward * 0.1);
-        camera.position.addScaledVector(side, moveRight * 0.1);
+        camera.position.addScaledVector(dir, moveF * 0.15);
+        camera.position.addScaledVector(side, moveR * 0.15);
     }
-
     renderer.render(scene, camera);
 }
-animate();
 
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+// Загрузка ника
+const savedNick = localStorage.getItem('mc_nick');
+if(savedNick) document.getElementById('display-nick').innerText = savedNick;
