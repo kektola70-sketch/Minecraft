@@ -3,32 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Mine Textures</title>
+    <title>Mobile Mine Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Экраны меню остаются те же, добавим только игру -->
-    <div id="screen-menu" class="screen">
-        <h1 style="color: #4CAF50; text-shadow: 2px 2px #000;">MOBILE CRAFT</h1>
-        <button onclick="showScreen('screen-worlds')">Играть</button>
-        <button onclick="showScreen('screen-account')">Аккаунт</button>
+    <!-- ЭКРАН ВХОДА / АККАУНТА -->
+    <div id="screen-auth" class="screen">
+        <h1 class="title">MOBILE CRAFT</h1>
+        <input type="text" id="input-nick" placeholder="Введите ваш ник...">
+        <button id="btn-login">ВОЙТИ В АККАУНТ</button>
+        <p id="auth-status"></p>
     </div>
 
-    <!-- ЭКРАНЫ АККАУНТА И МИРОВ (пропускаю для краткости, они в main.js работают) -->
-    <div id="screen-account" class="screen" style="display:none">
-        <h2>Firebase Аккаунт</h2>
-        <input type="text" id="input-nick" placeholder="Ник">
-        <button id="btn-auth">Сохранить</button>
-        <button onclick="showScreen('screen-menu')">Назад</button>
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="screen-menu" class="screen" style="display:none">
+        <h1 class="title">МЕНЮ</h1>
+        <div id="user-info">Игрок: <span id="display-nick"></span></div>
+        <button onclick="showScreen('screen-worlds')">ИГРАТЬ</button>
+        <button onclick="showScreen('screen-auth')">СМЕНИТЬ АККАУНТ</button>
     </div>
 
+    <!-- СПИСОК МИРОВ -->
     <div id="screen-worlds" class="screen" style="display:none">
+        <h2>ВАШИ МИРЫ</h2>
         <div id="worlds-list"></div>
-        <button onclick="initGame({seed:123})">Быстрая игра</button>
-        <button onclick="showScreen('screen-menu')">Назад</button>
+        <button onclick="showScreen('screen-create-world')" style="background:#2e7d32">СОЗДАТЬ НОВЫЙ МИР</button>
+        <button onclick="showScreen('screen-menu')">НАЗАД</button>
     </div>
 
-    <!-- ИНТЕРФЕЙС ИГРЫ -->
+    <!-- СОЗДАНИЕ МИРА -->
+    <div id="screen-create-world" class="screen" style="display:none">
+        <h2>НОВЫЙ МИР</h2>
+        <input type="text" id="world-name" placeholder="Название мира">
+        <input type="number" id="world-seed" placeholder="Ключ (Seed)">
+        <select id="world-mode">
+            <option value="creative">Творческий</option>
+            <option value="survival">Выживание</option>
+        </select>
+        <button onclick="createNewWorld()">НАЧАТЬ</button>
+        <button onclick="showScreen('screen-worlds')">ОТМЕНА</button>
+    </div>
+
+    <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
     <div id="ui-game" style="display:none">
         <div id="crosshair">+</div>
         <div id="joystick-container"></div>
@@ -37,19 +53,18 @@
             <button id="btn-jump" class="action-btn">ПРЫЖОК</button>
             <button id="btn-break" class="action-btn">ЛОМАТЬ</button>
             <button id="btn-place" class="action-btn">СТАВИТЬ</button>
+            <button onclick="location.reload()" class="exit-btn">МЕНЮ</button>
         </div>
 
         <div id="hotbar">
-            <div class="slot active" data-block="grass">🌱</div>
-            <div class="slot" data-block="dirt">🟫</div>
-            <div class="slot" data-block="stone">🌑</div>
-            <div class="slot" data-block="wood">🪵</div>
-            <div class="slot" data-block="glass">💎</div>
-            <div class="slot" data-block="leaves">🍃</div>
-            <div class="slot"></div>
-            <div class="slot"></div>
-            <div class="slot"></div>
-            <div class="slot btn-inv" onclick="alert('Инвентарь')">📦</div>
+            <!-- Место эмодзи теперь CSS классы для текстур -->
+            <div class="slot active" data-block="grass"><div class="preview grass"></div></div>
+            <div class="slot" data-block="dirt"><div class="preview dirt"></div></div>
+            <div class="slot" data-block="stone"><div class="preview stone"></div></div>
+            <div class="slot" data-block="wood"><div class="preview wood"></div></div>
+            <div class="slot" data-block="leaves"><div class="preview leaves"></div></div>
+            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="slot btn-inv">📦</div>
         </div>
     </div>
 
