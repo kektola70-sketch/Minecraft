@@ -1,99 +1,43 @@
 import * as THREE from 'three';
 
-// --- КОНФИГУРАЦИЯ FIREBASE ---
-const firebaseConfig = {
-  apiKey: "AIzaSyBdOHBV3JXlJgRM3pm3Id8BeGQ96bRZ1vs",
-  projectId: "minecraft-34cd5",
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+// --- CONFIG FIREBASE ---
+const firebaseConfig = { apiKey: "AIzaSyBdOHBV3JXlJgRM3pm3Id8BeGQ96bRZ1vs", projectId: "minecraft-34cd5" };
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// --- ПАРАМЕТРЫ ФИЗИКИ ---
-const PLAYER_HEIGHT = 1.8;
-const PLAYER_RADIUS = 0.35;
+// --- ИНВЕНТАРЬ ---
+let inventory = { grass: 64, dirt: 64, stone: 64, wood: 64, leaves: 64 };
+function updateInventoryUI() {
+    for (let key in inventory) {
+        const el = document.getElementById(`count-${key}`);
+        if (el) el.innerText = inventory[key];
+    }
+}
+
+// --- ФИЗИКА И ПАРАМЕТРЫ ---
+const PLAYER_HEIGHT = 1.7;
 const GRAVITY = 0.008;
-const JUMP_FORCE = 0.15;
-const SPEED = 0.12;
+const SPEED = 0.1;
+let velocityY = 0, onGround = false;
 
 let scene, camera, renderer, raycaster, blocks = [];
 let moveF = 0, moveR = 0, lon = 0, lat = 0;
-let velocityY = 0, onGround = false;
 let selectedBlock = 'grass';
 
 // --- ТЕКСТУРЫ ---
 const loader = new THREE.TextureLoader();
-const loadTex = (url) => {
-    const t = loader.load(url);
-    t.magFilter = t.minFilter = THREE.NearestFilter;
-    return t;
-};
+const matGrass = new THREE.MeshStandardMaterial({color: 0x5d9948});
+const matDirt = new THREE.MeshStandardMaterial({color: 0x8b4513});
+const matStone = new THREE.MeshStandardMaterial({color: 0x808080});
+const matWood = new THREE.MeshStandardMaterial({color: 0x6b411a});
+const matLeaves = new THREE.MeshStandardMaterial({color: 0x2d5a27});
 
-const textures = {
-    grassSide: loadTex('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/grass_dirt.png'),
-    grassTop: loadTex('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/grass.png'),
-    dirt: loadTex('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/dirt.png'),
-    stone: loadTex('https://threejs.org/examples/textures/grid.png'),
-    wood: loadTex('https://threejs.org/examples/textures/crate.gif')
-};
-
-const materials = {
-    grass: [
-        new THREE.MeshStandardMaterial({map: textures.grassSide}), new THREE.MeshStandardMaterial({map: textures.grassSide}),
-        new THREE.MeshStandardMaterial({map: textures.grassTop}), new THREE.MeshStandardMaterial({map: textures.dirt}),
-        new THREE.MeshStandardMaterial({map: textures.grassSide}), new THREE.MeshStandardMaterial({map: textures.grassSide})
-    ],
-    dirt: new THREE.MeshStandardMaterial({map: textures.dirt}),
-    stone: new THREE.MeshStandardMaterial({map: textures.stone}),
-    wood: new THREE.MeshStandardMaterial({map: textures.wood}),
-    leaves: new THREE.MeshStandardMaterial({color: 0x2d5a27, transparent: true, opacity: 0.8})
-};
-
-// --- ИНТЕРФЕЙС ---
-window.showScreen = (id) => {
-    document.querySelectorAll('.screen, #ui-game').forEach(s => s.style.display = 'none');
-    document.getElementById(id).style.display = 'flex';
-    if(id === 'screen-worlds') updateWorldsList();
-};
-
-document.getElementById('btn-login').onclick = async () => {
-    const nick = document.getElementById('input-nick').value.trim();
-    if(nick.length < 3) return alert("Ник короткий!");
-    await db.collection("players").doc(nick).set({ lastSeen: Date.now() }, { merge: true });
-    localStorage.setItem('mc_nick', nick);
-    document.getElementById('display-nick').innerText = nick;
-    showScreen('screen-menu');
-};
-
-window.createNewWorld = () => {
-    const world = { name: document.getElementById('world-name').value || "Мир", seed: Math.random(), id: Date.now() };
-    initGame(world);
-};
-
-function updateWorldsList() {
-    const list = document.getElementById('worlds-list');
-    list.innerHTML = '<button onclick="initGame({seed:123})">Быстрый мир</button>';
-}
-
-// --- ФУНКЦИЯ ПРОВЕРКИ КОЛЛИЗИЙ (ХИТБОКСЫ) ---
-function checkCollision(pos) {
-    const playerBox = new THREE.Box3().setFromCenterAndSize(
-        new THREE.Vector3(pos.x, pos.y - 0.9, pos.z), // Центр игрока
-        new THREE.Vector3(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2)
-    );
-
-    for (let i = 0; i < blocks.length; i++) {
-        const blockBox = new THREE.Box3().setFromObject(blocks[i]);
-        if (playerBox.intersectsBox(blockBox)) {
-            return true;
-        }
-    }
-    return false;
-}
+const blockMaterials = { grass: matGrass, dirt: matDirt, stone: matStone, wood: matWood, leaves: matLeaves };
 
 // --- ЯДРО ИГРЫ ---
-function initGame(world) {
-    showScreen('ui-game');
+window.initGame = (world) => {
     document.getElementById('ui-game').style.display = 'block';
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
@@ -104,11 +48,11 @@ function initGame(world) {
     scene.add(new THREE.AmbientLight(0xffffff, 1));
     raycaster = new THREE.Raycaster();
 
-    // Генерация
+    // Генерация площадки
     const geo = new THREE.BoxGeometry(1, 1, 1);
-    for(let x = -8; x < 8; x++) {
-        for(let z = -8; z < 8; z++) {
-            const b = new THREE.Mesh(geo, materials.grass);
+    for(let x = -10; x < 10; x++) {
+        for(let z = -10; z < 10; z++) {
+            const b = new THREE.Mesh(geo, matGrass);
             b.position.set(x, 0, z);
             scene.add(b);
             blocks.push(b);
@@ -118,50 +62,67 @@ function initGame(world) {
     camera.position.set(0, 5, 0);
     setupControls();
     animate();
+};
+
+function checkCollision(pos) {
+    const pBox = new THREE.Box3().setFromCenterAndSize(
+        new THREE.Vector3(pos.x, pos.y - 0.8, pos.z),
+        new THREE.Vector3(0.6, PLAYER_HEIGHT, 0.6)
+    );
+    for (let b of blocks) {
+        if (pBox.intersectsBox(new THREE.Box3().setFromObject(b))) return true;
+    }
+    return false;
 }
 
 function setupControls() {
-    // Джойстик
-    nipplejs.create({ zone: document.getElementById('joystick-container'), mode: 'static', position: {left: '60px', top: '60px'} })
+    nipplejs.create({ zone: document.getElementById('joystick-container'), mode: 'static', position: {left: '50px', top: '50px'} })
     .on('move', (e, d) => { moveF = d.vector.y; moveR = d.vector.x; })
     .on('end', () => { moveF = 0; moveR = 0; });
 
-    // Обзор
     let tx, ty;
-    document.addEventListener('touchstart', e => { if(e.touches[0].clientX > window.innerWidth/2){ tx = e.touches[0].clientX; ty = e.touches[0].clientY; }});
+    document.addEventListener('touchstart', e => { 
+        if(e.touches[0].clientY < window.innerHeight * 0.7) {
+            tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+        }
+    });
     document.addEventListener('touchmove', e => {
         for(let t of e.touches) {
-            if(t.clientX > window.innerWidth/2) {
-                lon += (t.clientX - tx) * 0.3;
-                lat += (t.clientY - ty) * 0.3;
+            if(t.clientY < window.innerHeight * 0.7) {
+                lon += (t.clientX - tx) * 0.4;
+                lat += (t.clientY - ty) * 0.4;
                 lat = Math.max(-85, Math.min(85, lat));
                 tx = t.clientX; ty = t.clientY;
             }
         }
     });
 
-    document.getElementById('btn-jump').onclick = () => { if(onGround) velocityY = JUMP_FORCE; };
-    
     document.getElementById('btn-break').onclick = () => {
         raycaster.setFromCamera({x:0, y:0}, camera);
         const hit = raycaster.intersectObjects(blocks);
         if(hit.length > 0 && hit[0].distance < 5) {
+            const type = 'grass'; // Для примера, можно определять по материалу
+            if(inventory[type] < 64) inventory[type]++;
             scene.remove(hit[0].object);
             blocks.splice(blocks.indexOf(hit[0].object), 1);
+            updateInventoryUI();
         }
     };
 
     document.getElementById('btn-place').onclick = () => {
+        if(inventory[selectedBlock] <= 0) return;
         raycaster.setFromCamera({x:0, y:0}, camera);
         const hit = raycaster.intersectObjects(blocks);
         if(hit.length > 0 && hit[0].distance < 5) {
             const p = hit[0].object.position;
             const n = hit[0].face.normal;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), materials[selectedBlock] || materials.grass);
+            const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), blockMaterials[selectedBlock]);
             b.position.set(p.x+n.x, p.y+n.y, p.z+n.z);
-            if (!checkCollision(camera.position)) { // Не ставим блок в себя
+            if(!checkCollision(camera.position)) {
                 scene.add(b);
                 blocks.push(b);
+                inventory[selectedBlock]--;
+                updateInventoryUI();
             }
         }
     };
@@ -177,57 +138,56 @@ function setupControls() {
 }
 
 function animate() {
-    if(!renderer) return;
     requestAnimationFrame(animate);
-
-    // Камера
     const phi = THREE.MathUtils.degToRad(90 - lat);
     const theta = THREE.MathUtils.degToRad(lon);
     const target = new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position);
     camera.lookAt(target);
 
-    // --- ФИЗИКА И ДВИЖЕНИЕ ---
     const oldPos = camera.position.clone();
 
-    // 1. Гравитация и прыжок (Ось Y)
+    // Y (Гравитация)
     velocityY -= GRAVITY;
     camera.position.y += velocityY;
-    onGround = false;
-
     if (checkCollision(camera.position)) {
-        if (velocityY < 0) onGround = true; // Мы упали на блок
+        if (velocityY < 0) onGround = true;
         camera.position.y = oldPos.y;
         velocityY = 0;
     }
 
-    // 2. Движение (Оси X и Z)
+    // XZ (Движение + АВТО-ПРЫЖОК)
     if (moveF !== 0 || moveR !== 0) {
         const dir = new THREE.Vector3();
         camera.getWorldDirection(dir);
         dir.y = 0; dir.normalize();
         const side = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
+        const moveVec = new THREE.Vector3().addScaledVector(dir, moveF * SPEED).addScaledVector(side, moveR * SPEED);
 
-        const moveVec = new THREE.Vector3()
-            .addScaledVector(dir, moveF * SPEED)
-            .addScaledVector(side, moveR * SPEED);
-
-        // Проверка X
+        // Пробуем шагнуть
         camera.position.x += moveVec.x;
-        if (checkCollision(camera.position)) camera.position.x = oldPos.x;
-
-        // Проверка Z
         camera.position.z += moveVec.z;
-        if (checkCollision(camera.position)) camera.position.z = oldPos.z;
-    }
 
+        if (checkCollision(camera.position)) {
+            // ЛОГИКА АВТО-ПРЫЖКА: пробуем подняться на 1.1 вверх
+            camera.position.y += 1.1;
+            if (checkCollision(camera.position)) {
+                // Если всё равно коллизия (стена выше 1 блока), отменяем всё
+                camera.position.copy(oldPos);
+            } else {
+                // Если запрыгнули, плавно опускаемся (уже делает гравитация)
+            }
+        }
+    }
     renderer.render(scene, camera);
 }
 
-// Старт
-const savedNick = localStorage.getItem('mc_nick');
-if(savedNick) {
-    document.getElementById('display-nick').innerText = savedNick;
-    showScreen('screen-menu');
-} else {
-    showScreen('screen-auth');
-}
+// Старт ника
+document.getElementById('btn-login').onclick = () => {
+    const nick = document.getElementById('input-nick').value;
+    if(nick) {
+        localStorage.setItem('mc_nick', nick);
+        showScreen('screen-menu');
+    }
+};
+if(localStorage.getItem('mc_nick')) showScreen('screen-menu');
+updateInventoryUI();
