@@ -7,16 +7,23 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Экраны меню (упрощены для примера) -->
+    <!-- ЭКРАН АВТОРИЗАЦИИ -->
     <div id="screen-auth" class="screen">
         <h1 class="title">MOBILE CRAFT</h1>
-        <input type="text" id="input-nick" placeholder="Ник...">
-        <button id="btn-login">ВОЙТИ</button>
+        <div id="auth-msg" style="color: #ff5555; font-size: 12px; height: 20px;"></div>
+        <input type="text" id="input-nick" placeholder="Введите ник...">
+        <div style="display: flex; gap: 10px;">
+            <button id="btn-login" style="width: 100px;">ВОЙТИ</button>
+            <button id="btn-reg" style="width: 140px; background: #2d7d2d;">РЕГИСТРАЦИЯ</button>
+        </div>
     </div>
 
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="screen-menu" class="screen" style="display:none">
         <h1 class="title">МЕНЮ</h1>
-        <button onclick="initGame({seed:123})">ИГРАТЬ</button>
+        <p>Игрок: <span id="display-nick"></span></p>
+        <button onclick="initGame({seed:123})">НАЧАТЬ ИГРУ</button>
+        <button onclick="logout()">ВЫЙТИ ИЗ АККАУНТА</button>
     </div>
 
     <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
@@ -24,7 +31,6 @@
         <div id="crosshair">+</div>
         <div id="joystick-container"></div>
         
-        <!-- Кнопка меню сверху по центру -->
         <button onclick="location.reload()" class="btn-top-menu">МЕНЮ</button>
 
         <div id="action-buttons">
@@ -49,14 +55,11 @@
                 <div class="preview wood"></div>
                 <span class="count" id="count-wood">64</span>
             </div>
-            <div class="slot" data-block="leaves">
-                <div class="preview leaves"></div>
-                <span class="count" id="count-leaves">64</span>
-            </div>
             <div class="slot btn-inv">📦</div>
         </div>
     </div>
 
+    <!-- СКРИПТЫ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
