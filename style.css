@@ -1,28 +1,33 @@
-body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; color: white; user-select: none; touch-action: none; }
-.screen { position: absolute; width: 100%; height: 100%; z-index: 100; background: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-.title { color: #4CAF50; text-shadow: 2px 2px #000; }
-button { padding: 12px; background: #555; border: 2px solid #fff; color: white; font-weight: bold; border-radius: 4px; }
-input { width: 220px; padding: 12px; background: #111; border: 1px solid #777; color: #fff; }
+body { margin: 0; overflow: hidden; background: #111; font-family: 'Segoe UI', sans-serif; color: white; user-select: none; touch-action: none; }
+.screen { position: absolute; width: 100%; height: 100%; z-index: 100; background: radial-gradient(#444, #111); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+.title { color: #4CAF50; text-shadow: 3px 3px #000; letter-spacing: 2px; }
+button { padding: 14px; background: #555; border: 2px solid #fff; color: white; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 14px; }
+input { width: 240px; padding: 14px; background: #000; border: 1px solid #777; color: #fff; border-radius: 6px; font-size: 16px; }
 
 #ui-game { position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-#crosshair { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); color: white; font-size: 20px; }
-.btn-top-menu { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 70px; font-size: 10px; background: rgba(0,0,0,0.5); pointer-events: auto; }
+#crosshair { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); color: white; font-size: 24px; opacity: 0.7; pointer-events: none; }
+.btn-top-menu { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 80px; font-size: 11px; background: rgba(0,0,0,0.6); pointer-events: auto; border: 1px solid #777; }
 
-#joystick-container { position: absolute; bottom: 120px; left: 10%; width: 100px; height: 100px; pointer-events: auto; }
-#action-buttons { position: absolute; bottom: 120px; right: 10%; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
-.action-btn { width: 65px; height: 65px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 1px solid #fff; color: white; font-size: 10px; }
+#joystick-container { position: absolute; bottom: 120px; left: 25px; width: 100px; height: 100px; pointer-events: auto; opacity: 0.8; }
+#action-buttons { position: absolute; bottom: 120px; right: 25px; display: flex; flex-direction: column; gap: 15px; pointer-events: auto; }
+.action-btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 2px solid #fff; color: white; font-size: 11px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-#hotbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; background: rgba(0,0,0,0.85); padding: 4px; gap: 2px; pointer-events: auto; width: 95%; justify-content: space-between; }
-.slot { width: 38px; height: 38px; background: #8b8b8b; border: 2px solid #373737; display: flex; align-items: center; justify-content: center; position: relative; }
-.slot.active { border-color: #fff; background: #aaa; }
-.preview { width: 24px; height: 24px; }
-.count { position: absolute; bottom: 0; right: 1px; font-size: 9px; color: white; text-shadow: 1px 1px #000; }
+#hotbar { 
+    position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); 
+    display: flex; background: rgba(0,0,0,0.8); padding: 5px; gap: 3px; pointer-events: auto; 
+    border: 1px solid #555; width: 92%; justify-content: space-between; border-radius: 4px;
+}
+.slot { width: 35px; height: 35px; background: #666; border: 2px solid #333; display: flex; align-items: center; justify-content: center; position: relative; }
+.slot.active { border-color: #fff; background: #999; box-shadow: inset 0 0 8px #fff; }
+.preview { width: 22px; height: 22px; border: 1px solid rgba(0,0,0,0.3); }
+.count { position: absolute; bottom: 0px; right: 1px; font-size: 9px; text-shadow: 1px 1px #000; color: #fff; font-weight: bold; }
 
-.preview.grass { background: #5d9948; }
-.preview.dirt { background: #8b4513; }
-.preview.stone { background: #808080; }
-.preview.wood { background: #6b411a; }
-.preview.leaves { background: #2d5a27; }
-.preview.planks { background: #a47449; }
-.preview.glass { background: #add8e6; opacity: 0.6; }
-.preview.cobble { background: #666; }
+/* Реалистичные цвета для превью */
+.preview.grass { background: #3d5e2e; }
+.preview.dirt { background: #5c3a21; }
+.preview.stone { background: #636363; }
+.preview.wood { background: #4d2d18; }
+.preview.leaves { background: #1a3300; }
+.preview.planks { background: #8c6a45; }
+.preview.glass-blk { background: #aaddff; opacity: 0.6; }
+.preview.cobble { background: #444; }
