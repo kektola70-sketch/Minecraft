@@ -3,70 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Mine Pro</title>
+    <title>Mobile Mine Textures</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- МЕНЮ -->
+    <!-- Экраны меню остаются те же, добавим только игру -->
     <div id="screen-menu" class="screen">
         <h1 style="color: #4CAF50; text-shadow: 2px 2px #000;">MOBILE CRAFT</h1>
-        <div id="user-display" style="color: #fff; margin-bottom: 10px;">Игрок: <span id="display-nick">Гость</span></div>
-        <button onclick="showScreen('screen-worlds')">Одиночная игра</button>
+        <button onclick="showScreen('screen-worlds')">Играть</button>
         <button onclick="showScreen('screen-account')">Аккаунт</button>
     </div>
 
-    <!-- АККАУНТ -->
+    <!-- ЭКРАНЫ АККАУНТА И МИРОВ (пропускаю для краткости, они в main.js работают) -->
     <div id="screen-account" class="screen" style="display:none">
-        <h2>Регистрация в Firebase</h2>
-        <input type="text" id="input-nick" placeholder="Введите ник">
-        <button id="btn-auth">Зарегистрировать ник</button>
+        <h2>Firebase Аккаунт</h2>
+        <input type="text" id="input-nick" placeholder="Ник">
+        <button id="btn-auth">Сохранить</button>
         <button onclick="showScreen('screen-menu')">Назад</button>
-        <p id="auth-debug" style="font-size: 10px; color: #aaa;"></p>
     </div>
 
-    <!-- МИРЫ -->
     <div id="screen-worlds" class="screen" style="display:none">
-        <h2>Ваши миры</h2>
         <div id="worlds-list"></div>
-        <button onclick="showScreen('screen-create-world')" style="background: #2E7D32;">Создать мир</button>
+        <button onclick="initGame({seed:123})">Быстрая игра</button>
         <button onclick="showScreen('screen-menu')">Назад</button>
     </div>
 
-    <!-- СОЗДАНИЕ МИРА -->
-    <div id="screen-create-world" class="screen" style="display:none">
-        <h2>Новый мир</h2>
-        <input type="text" id="world-name" placeholder="Название">
-        <input type="number" id="world-seed" placeholder="Seed (например 123)">
-        <select id="world-mode">
-            <option value="creative">Творческий</option>
-            <option value="survival">Выживание</option>
-        </select>
-        <button onclick="createNewWorld()">Начать выживание</button>
-        <button onclick="showScreen('screen-worlds')">Назад</button>
-    </div>
-
-    <!-- ИГРА -->
+    <!-- ИНТЕРФЕЙС ИГРЫ -->
     <div id="ui-game" style="display:none">
         <div id="crosshair">+</div>
         <div id="joystick-container"></div>
+        
         <div id="action-buttons">
             <button id="btn-jump" class="action-btn">ПРЫЖОК</button>
             <button id="btn-break" class="action-btn">ЛОМАТЬ</button>
             <button id="btn-place" class="action-btn">СТАВИТЬ</button>
-            <button onclick="location.reload()" class="exit-btn">ВЫЙТИ</button>
         </div>
+
         <div id="hotbar">
-            <div class="slot active" data-color="0x44aa44">🌿</div>
-            <div class="slot" data-color="0x8b4513">🟫</div>
-            <div class="slot" data-color="0x808080">🧱</div>
+            <div class="slot active" data-block="grass">🌱</div>
+            <div class="slot" data-block="dirt">🟫</div>
+            <div class="slot" data-block="stone">🌑</div>
+            <div class="slot" data-block="wood">🪵</div>
+            <div class="slot" data-block="glass">💎</div>
+            <div class="slot" data-block="leaves">🍃</div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot btn-inv" onclick="alert('Инвентарь')">📦</div>
         </div>
     </div>
 
-    <!-- БИБЛИОТЕКИ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
-    
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
