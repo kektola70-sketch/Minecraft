@@ -3,45 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Mine Pro</title>
+    <title>Mobile Mine Vertical</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ЭКРАН ВХОДА / АККАУНТА -->
+    <!-- Экраны меню (упрощены для примера) -->
     <div id="screen-auth" class="screen">
         <h1 class="title">MOBILE CRAFT</h1>
-        <input type="text" id="input-nick" placeholder="Введите ваш ник...">
-        <button id="btn-login">ВОЙТИ В АККАУНТ</button>
-        <p id="auth-status"></p>
+        <input type="text" id="input-nick" placeholder="Ник...">
+        <button id="btn-login">ВОЙТИ</button>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="screen-menu" class="screen" style="display:none">
         <h1 class="title">МЕНЮ</h1>
-        <div id="user-info">Игрок: <span id="display-nick"></span></div>
-        <button onclick="showScreen('screen-worlds')">ИГРАТЬ</button>
-        <button onclick="showScreen('screen-auth')">СМЕНИТЬ АККАУНТ</button>
-    </div>
-
-    <!-- СПИСОК МИРОВ -->
-    <div id="screen-worlds" class="screen" style="display:none">
-        <h2>ВАШИ МИРЫ</h2>
-        <div id="worlds-list"></div>
-        <button onclick="showScreen('screen-create-world')" style="background:#2e7d32">СОЗДАТЬ НОВЫЙ МИР</button>
-        <button onclick="showScreen('screen-menu')">НАЗАД</button>
-    </div>
-
-    <!-- СОЗДАНИЕ МИРА -->
-    <div id="screen-create-world" class="screen" style="display:none">
-        <h2>НОВЫЙ МИР</h2>
-        <input type="text" id="world-name" placeholder="Название мира">
-        <input type="number" id="world-seed" placeholder="Ключ (Seed)">
-        <select id="world-mode">
-            <option value="creative">Творческий</option>
-            <option value="survival">Выживание</option>
-        </select>
-        <button onclick="createNewWorld()">НАЧАТЬ</button>
-        <button onclick="showScreen('screen-worlds')">ОТМЕНА</button>
+        <button onclick="initGame({seed:123})">ИГРАТЬ</button>
     </div>
 
     <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
@@ -49,21 +24,35 @@
         <div id="crosshair">+</div>
         <div id="joystick-container"></div>
         
+        <!-- Кнопка меню сверху по центру -->
+        <button onclick="location.reload()" class="btn-top-menu">МЕНЮ</button>
+
         <div id="action-buttons">
-            <button id="btn-jump" class="action-btn">ПРЫЖОК</button>
             <button id="btn-break" class="action-btn">ЛОМАТЬ</button>
             <button id="btn-place" class="action-btn">СТАВИТЬ</button>
-            <button onclick="location.reload()" class="exit-btn">МЕНЮ</button>
         </div>
 
         <div id="hotbar">
-            <!-- Место эмодзи теперь CSS классы для текстур -->
-            <div class="slot active" data-block="grass"><div class="preview grass"></div></div>
-            <div class="slot" data-block="dirt"><div class="preview dirt"></div></div>
-            <div class="slot" data-block="stone"><div class="preview stone"></div></div>
-            <div class="slot" data-block="wood"><div class="preview wood"></div></div>
-            <div class="slot" data-block="leaves"><div class="preview leaves"></div></div>
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="slot active" data-block="grass">
+                <div class="preview grass"></div>
+                <span class="count" id="count-grass">64</span>
+            </div>
+            <div class="slot" data-block="dirt">
+                <div class="preview dirt"></div>
+                <span class="count" id="count-dirt">64</span>
+            </div>
+            <div class="slot" data-block="stone">
+                <div class="preview stone"></div>
+                <span class="count" id="count-stone">64</span>
+            </div>
+            <div class="slot" data-block="wood">
+                <div class="preview wood"></div>
+                <span class="count" id="count-wood">64</span>
+            </div>
+            <div class="slot" data-block="leaves">
+                <div class="preview leaves"></div>
+                <span class="count" id="count-leaves">64</span>
+            </div>
             <div class="slot btn-inv">📦</div>
         </div>
     </div>
