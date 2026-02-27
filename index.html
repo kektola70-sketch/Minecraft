@@ -3,19 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Minecraft Clone</title>
+    <title>Mobile Mine - Alpha</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Прицел в центре -->
     <div id="crosshair">+</div>
     
-    <!-- Контейнер для джойстика -->
+    <!-- Джойстик -->
     <div id="joystick-container"></div>
 
-    <!-- Подключаем библиотеки -->
+    <!-- Кнопки действий (Справа) -->
+    <div id="action-buttons">
+        <button id="btn-hit" class="action-btn">УДАР</button>
+        <button id="btn-break" class="action-btn">ЛОМАТЬ</button>
+        <button id="btn-place" class="action-btn" style="display: none;">СТАВИТЬ</button>
+    </div>
+
+    <!-- Хотбар (Снизу) -->
+    <div id="hotbar">
+        <div class="slot active" data-id="1"></div>
+        <div class="slot" data-id="2"></div>
+        <div class="slot" data-id="3"></div>
+        <div class="slot" data-id="4"></div>
+        <div class="slot" data-id="5"></div>
+        <div class="slot" data-id="6"></div>
+        <div class="slot" data-id="7"></div>
+        <div class="slot" data-id="8"></div>
+        <div class="slot" data-id="9"></div>
+        <div class="slot btn-inv" id="open-inv">📦</div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
-    
     <script type="importmap">
         {
             "imports": {
@@ -24,7 +42,6 @@
             }
         }
     </script>
-    
     <script type="module" src="main.js"></script>
 </body>
 </html>
