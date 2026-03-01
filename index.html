@@ -6,23 +6,23 @@
     <title>Minecraft JS Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <!-- Подключаем Three.js для 3D графики -->
+    
+    <!-- Библиотека 3D графики -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Подключаем библиотеку для шума Перлина (генерация ландшафта) -->
+    <!-- Библиотека для генерации ландшафта -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
 <body>
 
-    <!-- Слой игры (3D мир) -->
-    <div id="game-world"></div>
-    
-    <!-- UI поверх игры (прицел) -->
-    <div id="game-ui" style="display:none;">
+    <!-- Интерфейс игры (Прицел и инфо) -->
+    <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">FPS: 60 | XYZ: 0, 0, 0</div>
     </div>
 
-    <div id="game-container">
+    <!-- Контейнер меню (перекрывает игру) -->
+    <div id="menu-container">
+        
         <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
@@ -31,68 +31,75 @@
             </div>
             
             <div class="menu-buttons">
-                <button class="mc-btn" onclick="showScreen('singleplayer')" data-lang-key="singleplayer">Одиночная игра</button>
-                <button class="mc-btn" onclick="showScreen('multiplayer')" data-lang-key="multiplayer">Сетевая игра</button>
+                <button class="mc-btn" onclick="showScreen('singleplayer')" data-lang="singleplayer">Одиночная игра</button>
+                <button class="mc-btn" onclick="showScreen('multiplayer')" data-lang="multiplayer">Сетевая игра</button>
                 
                 <div class="row-buttons">
-                    <button class="mc-btn half" onclick="showScreen('settings')" data-lang-key="settings">Настройки</button>
-                    <button class="mc-btn half" onclick="showScreen('language')" data-lang-key="language">Язык</button>
+                    <button class="mc-btn half" onclick="showScreen('settings')" data-lang="settings">Настройки</button>
+                    <button class="mc-btn half" onclick="showScreen('language')" data-lang="language">Язык</button>
                 </div>
                 
-                <button class="mc-btn" onclick="exitGame()" data-lang-key="quit">Выйти</button>
+                <button class="mc-btn" onclick="exitGame()" data-lang="quit">Выйти</button>
             </div>
             
-            <div class="footer-text">Minecraft JS Edition Alpha 0.0.2</div>
+            <div class="footer-text">Minecraft JS Edition Alpha 0.0.3</div>
         </div>
 
         <!-- ОДИНОЧНАЯ ИГРА -->
         <div id="singleplayer-screen" class="screen">
-            <h2 data-lang-key="select_world">Выбор мира</h2>
+            <h2 data-lang="select_world">Выбор мира</h2>
             <div class="scroll-list">
-                <div class="list-item selected">New World</div>
+                <div class="list-item selected">New World (Creative)</div>
+                <div class="list-item">Survival World</div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="startGame()" data-lang-key="play_world">Играть в выбранном мире</button>
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang-key="cancel">Отмена</button>
+                <button class="mc-btn" onclick="startGame()" data-lang="play_world">Играть в выбранном мире</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
             </div>
         </div>
 
-        <!-- СЕТЕВАЯ ИГРА (Заглушка) -->
+        <!-- СЕТЕВАЯ ИГРА -->
         <div id="multiplayer-screen" class="screen">
-            <h2 data-lang-key="multiplayer">Сетевая игра</h2>
+            <h2 data-lang="multiplayer">Сетевая игра</h2>
             <div class="scroll-list">
-                <div class="list-item">Server 1</div>
+                <div class="list-item server-item">
+                    <span>Hypixel Clone</span> <span style="color:#0f0">12ms</span>
+                </div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang-key="cancel">Отмена</button>
+                <button class="mc-btn" onclick="alert('Coming soon!')">Подключиться</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
             </div>
         </div>
 
         <!-- НАСТРОЙКИ -->
         <div id="settings-screen" class="screen">
-            <h2 data-lang-key="settings">Настройки</h2>
+            <h2 data-lang="settings">Настройки</h2>
             <div class="settings-grid">
                 <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('renderDist')">Render: 8</button>
+                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render: 8</button>
                 <button class="mc-btn" id="btn-music" onclick="toggleSetting('music')">Music: OFF</button>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="applySettings(); showScreen('main-menu')" data-lang-key="done">Готово</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
             </div>
         </div>
 
          <!-- ЯЗЫК -->
          <div id="language-screen" class="screen">
-            <h2 data-lang-key="language">Язык</h2>
+            <h2 data-lang="language">Язык</h2>
             <div class="scroll-list">
                 <div class="list-item" onclick="setLanguage('ru')">Русский (Russia)</div>
                 <div class="list-item" onclick="setLanguage('en')">English (US)</div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang-key="done">Готово</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
             </div>
         </div>
     </div>
+
+    <!-- Канвас игры будет создан здесь скриптом автоматически, но мы можем задать контейнер -->
+    <div id="game-canvas-container"></div>
 
     <script src="script.js"></script>
 </body>
