@@ -1,65 +1,80 @@
 body {
     margin: 0;
-    padding: 0;
     overflow: hidden;
     background-color: #000;
     font-family: 'VT323', monospace;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none; /* Запрещает зум и скролл на телефоне */
+    touch-action: none;
 }
 
-/* Контейнер для 3D канваса */
 #game-canvas-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 1;
 }
 
-/* UI игры */
 #game-ui {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 5;
-    pointer-events: none;
+    pointer-events: none; /* Клики проходят сквозь, но не на элементах с pointer-events: auto */
     display: none;
 }
 
 #crosshair {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 30px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 30px; color: rgba(255, 255, 255, 0.8);
     text-shadow: 1px 1px 0 #000;
 }
 
 #debug-info {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 20px;
-    color: white;
+    top: 10px; left: 10px;
+    font-size: 20px; color: white;
     text-shadow: 1px 1px 0 #000;
 }
 
-/* МОБИЛЬНОЕ УПРАВЛЕНИЕ */
+/* --- ХОТБАР (9 слотов) --- */
+#hotbar-container {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px;
+    border-radius: 5px;
+    pointer-events: auto; /* Чтобы можно было кликать на слоты */
+}
+
+.hotbar-slot {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #555;
+    background-color: rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+
+.hotbar-slot.active {
+    border-color: white;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+/* --- МОБИЛЬНОЕ УПРАВЛЕНИЕ --- */
 #mobile-controls {
-    display: none; /* Показываем через JS */
+    display: none;
     position: absolute;
     bottom: 20px;
     left: 0;
     width: 100%;
-    height: 150px;
+    height: 200px;
     z-index: 20;
-    pointer-events: none; /* Чтобы клики между кнопками проходили */
+    pointer-events: none;
 }
 
 .d-pad {
@@ -71,11 +86,18 @@ body {
 
 .action-btns {
     position: absolute;
-    bottom: 20px;
+    bottom: 60px; /* Чуть выше, чтобы не мешать хотбару */
     right: 20px;
     display: flex;
-    gap: 10px;
+    gap: 20px;
     pointer-events: auto;
+    align-items: flex-end;
+}
+
+.vertical-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .control-row {
@@ -86,37 +108,33 @@ body {
 }
 
 .control-btn {
-    width: 50px;
-    height: 50px;
+    width: 50px; height: 50px;
     background: rgba(255, 255, 255, 0.2);
     border: 2px solid rgba(255, 255, 255, 0.4);
-    color: white;
-    font-size: 24px;
-    border-radius: 5px;
+    color: white; font-size: 24px;
+    border-radius: 10px;
     touch-action: none;
 }
 
-.control-btn:active {
-    background: rgba(255, 255, 255, 0.5);
+.control-btn:active { background: rgba(255, 255, 255, 0.5); }
+
+.action-big {
+    width: 70px; height: 70px;
+    font-size: 30px;
+    border-radius: 50%;
+    border: 3px solid white;
 }
 
-.menu-btn {
-    background: rgba(255, 100, 100, 0.3);
-}
+.menu-btn { width: 40px; height: 40px; font-size: 20px; background: rgba(255, 50, 50, 0.4); }
 
-/* МЕНЮ */
+/* --- МЕНЮ --- */
 #menu-container {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 50;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 50; /* Самый высокий индекс */
     background-image: url('https://assets.codepen.io/13471/dirt-bg.jpg'); 
     background-size: 128px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
 }
 
 .screen {
@@ -124,122 +142,25 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    height: 100%;
     background-color: rgba(0, 0, 0, 0.65);
-    padding-top: 50px;
+    padding: 20px;
+    border-radius: 10px;
 }
 
-.screen.active {
-    display: flex;
-}
-
-/* Логотип */
-.logo-container {
-    position: relative;
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.game-title {
-    font-size: 60px; /* Уменьшил для телефонов */
-    margin: 0;
-    color: #b0b0b0;
-    text-shadow: 4px 4px 0px #3f3f3f;
-    letter-spacing: -2px;
-}
-
-.splash-text {
-    position: absolute;
-    bottom: -10px;
-    right: -20px;
-    color: #ffff55;
-    font-size: 20px;
-    transform: rotate(-20deg);
-    text-shadow: 2px 2px 0 #3f3f00;
-    animation: bounce 0.8s infinite alternate;
-}
-
-@keyframes bounce {
-    from { transform: rotate(-20deg) scale(1); }
-    to { transform: rotate(-20deg) scale(1.1); }
-}
-
-/* Кнопки меню */
-.menu-buttons, .bottom-buttons, .settings-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 90%; /* Ширина адаптивная для телефонов */
-    max-width: 400px;
-}
-
-.row-buttons {
-    display: flex;
-    gap: 10px;
-}
+.screen.active { display: flex; }
 
 .mc-btn {
-    height: 40px;
+    margin: 5px 0;
+    height: 40px; width: 300px;
     background-color: #7d7d7d;
-    border: 2px solid;
-    border-color: #fff #000 #000 #fff;
-    color: white;
-    font-family: 'VT323', monospace;
-    font-size: 24px;
-    cursor: pointer;
+    border: 2px solid; border-color: #fff #000 #000 #fff;
+    color: white; font-family: 'VT323', monospace; font-size: 24px;
     text-shadow: 2px 2px 0 #3f3f3f;
-    width: 100%;
-}
-
-.mc-btn:hover {
-    background-color: #5c74ad;
-    color: #ffffa0;
-}
-
-.mc-btn:active {
-    border-color: #000 #fff #fff #000;
-}
-
-.mc-btn.half {
-    width: 50%;
-}
-
-.scroll-list {
-    width: 80%;
-    height: 50%;
-    background-color: rgba(0,0,0,0.5);
-    border: 2px solid #a0a0a0;
-    margin-bottom: 20px;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-.list-item {
-    padding: 10px;
-    border: 1px solid transparent;
     cursor: pointer;
-    font-size: 22px;
-    color: #b0b0b0;
 }
+.mc-btn:active { border-color: #000 #fff #fff #000; }
+.row-buttons { display: flex; gap: 10px; width: 300px; }
+.mc-btn.half { width: 100%; }
 
-.list-item:hover, .list-item.selected {
-    background-color: rgba(0,0,0,1);
-    border: 1px solid #fff;
-    color: white;
-}
-
-.footer-text {
-    position: absolute;
-    bottom: 10px;
-    width: 100%;
-    text-align: center;
-    font-size: 14px;
-    color: white;
-}
-
-h2 {
-    font-size: 30px;
-    margin-bottom: 20px;
-    color: #ffffff;
-    text-shadow: 2px 2px 0 #3f3f3f;
-}
+.game-title { font-size: 60px; color: #b0b0b0; text-shadow: 4px 4px 0 #3f3f3f; margin:0; }
+.logo-container { text-align: center; margin-bottom: 20px; }
