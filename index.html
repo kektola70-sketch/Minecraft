@@ -2,62 +2,97 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Mine HD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft JS Edition</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключаем пиксельный шрифт от Google -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- ЭКРАН АВТОРИЗАЦИИ -->
-    <div id="screen-auth" class="screen">
-        <h1 class="title">MOBILE CRAFT HD</h1>
-        <div id="auth-msg" style="color: #ffaa00; font-size: 13px; height: 20px; text-align: center;"></div>
-        <input type="text" id="input-nick" placeholder="Ваш ник...">
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button id="btn-login" style="width: 100px;">ВОЙТИ</button>
-            <button id="btn-reg" style="width: 130px; background: #2e7d32;">РЕГИСТРАЦИЯ</button>
+
+    <div id="game-container">
+        <!-- ГЛАВНОЕ МЕНЮ -->
+        <div id="main-menu" class="screen active">
+            <div class="logo-container">
+                <h1 class="game-title">MINECRAFT</h1>
+                <div class="splash-text" id="splash-text">JavaScript Edition!</div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
+                <button class="mc-btn" onclick="showScreen('multiplayer')">Сетевая игра</button>
+                
+                <div class="row-buttons">
+                    <button class="mc-btn half" onclick="showScreen('settings')">Настройки</button>
+                    <button class="mc-btn half" onclick="showScreen('language')">Язык</button>
+                </div>
+                
+                <button class="mc-btn" onclick="exitGame()">Выйти</button>
+            </div>
+            
+            <div class="footer-text">Minecraft JS Edition Alpha 0.0.1<br>Copyright Mojang AB (Not really)</div>
+        </div>
+
+        <!-- ОДИНОЧНАЯ ИГРА -->
+        <div id="singleplayer-screen" class="screen">
+            <h2>Выбор мира</h2>
+            <div class="scroll-list">
+                <div class="list-item">Новый Мир (Выживание)</div>
+                <div class="list-item">Тестовый Мир (Творческий)</div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="startGame()">Играть в выбранном мире</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- СЕТЕВАЯ ИГРА -->
+        <div id="multiplayer-screen" class="screen">
+            <h2>Сетевая игра</h2>
+            <div class="scroll-list">
+                <div class="list-item server-item">
+                    <span class="server-name">Hypixel Clone</span>
+                    <span class="server-ping">12ms</span>
+                </div>
+                <div class="list-item server-item">
+                    <span class="server-name">Localhost:3000</span>
+                    <span class="server-ping">0ms</span>
+                </div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn">Подключиться</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- НАСТРОЙКИ -->
+        <div id="settings-screen" class="screen">
+            <h2>Настройки</h2>
+            <div class="settings-grid">
+                <button class="mc-btn">Музыка: ВКЛ</button>
+                <button class="mc-btn">Звуки: ВКЛ</button>
+                <button class="mc-btn">Сложность: Нормально</button>
+                <button class="mc-btn">FOV: 70</button>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
+            </div>
+        </div>
+
+         <!-- ЯЗЫК -->
+         <div id="language-screen" class="screen">
+            <h2>Язык (Language)</h2>
+            <div class="scroll-list">
+                <div class="list-item selected">Русский (Russia)</div>
+                <div class="list-item">English (US)</div>
+                <div class="list-item">Deutsch (Germany)</div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
+            </div>
         </div>
     </div>
 
-    <!-- ГЛАВНОЕ МЕНЮ -->
-    <div id="screen-menu" class="screen" style="display:none">
-        <h1 class="title">МЕНЮ</h1>
-        <p>Игрок: <span id="display-nick" style="color: #4CAF50; font-weight: bold;"></span></p>
-        <button id="btn-start-game" style="background: #2e7d32;">НАЧАТЬ ИГРУ</button>
-        <button onclick="logout()" style="background: #822;">ВЫЙТИ</button>
-    </div>
-
-    <!-- ИГРОВОЙ ИНТЕРФЕЙС -->
-    <div id="ui-game" style="display:none">
-        <div id="crosshair">+</div>
-        <div id="joystick-container"></div>
-        
-        <button onclick="location.reload()" class="btn-top-menu">МЕНЮ</button>
-
-        <div id="action-buttons">
-            <button id="btn-break" class="action-btn">ЛОМАТЬ</button>
-            <button id="btn-place" class="action-btn">СТАВИТЬ</button>
-        </div>
-
-        <div id="hotbar">
-            <div class="slot active" data-block="grass"><div class="preview grass"></div><span class="count">64</span></div>
-            <div class="slot" data-block="dirt"><div class="preview dirt"></div><span class="count">64</span></div>
-            <div class="slot" data-block="stone"><div class="preview stone"></div><span class="count">64</span></div>
-            <div class="slot" data-block="wood"><div class="preview wood"></div><span class="count">64</span></div>
-            <div class="slot" data-block="leaves"><div class="preview leaves"></div><span class="count">64</span></div>
-            <div class="slot" data-block="planks"><div class="preview planks"></div><span class="count">64</span></div>
-            <div class="slot" data-block="glass"><div class="preview glass-blk"></div><span class="count">64</span></div>
-            <div class="slot" data-block="cobble"><div class="preview cobble"></div><span class="count">64</span></div>
-            <div class="slot btn-inv">📦</div>
-        </div>
-    </div>
-
-    <!-- ЗАВИСИМОСТИ -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
-    <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
-    <script type="module" src="main.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
