@@ -1,10 +1,9 @@
-</body>
-э<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft JS Infinite</title>
+    <title>Minecraft JS Optimized</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,9 +14,11 @@
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">
+            <span style="color: #0f0; font-size: 24px;">FPS: <span id="fps-counter">60</span></span><br>
             <span id="debug-mode">Creative</span><br>
             XYZ: <span id="xyz-pos">0, 0, 0</span><br>
-            Chunk: <span id="chunk-pos">0, 0</span>
+            Chunk: <span id="chunk-pos">0, 0</span><br>
+            Entities: <span id="entity-count">0</span>
         </div>
         
         <div id="stats-container">
@@ -26,7 +27,6 @@
         </div>
 
         <div id="hotbar-container">
-            <!-- 9 Слотов -->
             <div class="hotbar-slot active" data-slot="0"></div>
             <div class="hotbar-slot" data-slot="1"></div>
             <div class="hotbar-slot" data-slot="2"></div>
@@ -67,14 +67,14 @@
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Infinite World!</div>
+                <div class="splash-text" id="splash-text">Optimized!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
                 <button class="mc-btn" onclick="showScreen('settings')">Настройки</button>
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Beta 0.2.0 - Infinite Update</div>
+            <div class="footer-text">Beta 0.3.0 - FPS Boost</div>
         </div>
 
         <div id="singleplayer-screen" class="screen">
@@ -90,11 +90,10 @@
             <h2>Создать Новый Мир</h2>
             <div class="create-options">
                 <label>Название мира:</label>
-                <input type="text" class="input-field" value="Бесконечный Мир">
+                <input type="text" class="input-field" value="Мир">
                 <label>Ключ (Seed):</label>
-                <input type="text" id="seed-input" class="input-field" placeholder="Оставьте пустым">
+                <input type="text" id="seed-input" class="input-field" placeholder="Пусто = Случайно">
                 <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
-                <div class="desc-text" id="gamemode-desc">Осторожно, можно упасть!</div>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="createAndStartWorld()">Создать Мир</button>
@@ -105,7 +104,7 @@
         <div id="settings-screen" class="screen">
             <h2>Настройки</h2>
             <div class="settings-grid">
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 4</button>
+                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 3</button>
             </div>
             <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Готово</button></div>
         </div>
