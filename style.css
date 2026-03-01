@@ -1,28 +1,32 @@
-/* ... Оставляем всё из прошлого шага, добавляем следующее: ... */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'VT323', monospace;
+    user-select: none;
+}
 
-#game-world {
+/* Контейнер для 3D канваса */
+#game-canvas-container {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0; /* Самый нижний слой */
-    background: #87CEEB; /* Цвет неба */
+    z-index: 1;
 }
 
-#game-container {
-    position: relative;
-    z-index: 10; /* Меню поверх игры */
-}
-
+/* UI игры (прицел) - поверх 3D, но под меню */
 #game-ui {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Чтобы клики проходили сквозь UI в игру */
     z-index: 5;
+    pointer-events: none; /* Клики проходят сквозь интерфейс */
+    display: none; /* Скрыт в меню */
 }
 
 #crosshair {
@@ -32,6 +36,7 @@
     transform: translate(-50%, -50%);
     font-size: 30px;
     color: rgba(255, 255, 255, 0.8);
+    text-shadow: 1px 1px 0 #000;
 }
 
 #debug-info {
@@ -41,4 +46,151 @@
     font-size: 20px;
     color: white;
     text-shadow: 1px 1px 0 #000;
+}
+
+/* Меню - поверх всего */
+#menu-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    background-image: url('https://assets.codepen.io/13471/dirt-bg.jpg'); 
+    background-size: 128px;
+    display: flex; /* Flex для центрирования */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Стили экранов меню */
+.screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.65);
+    padding-top: 50px;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Логотип */
+.logo-container {
+    position: relative;
+    margin-bottom: 50px;
+    text-align: center;
+}
+
+.game-title {
+    font-size: 80px;
+    margin: 0;
+    color: #b0b0b0;
+    text-shadow: 4px 4px 0px #3f3f3f;
+    letter-spacing: -2px;
+}
+
+.splash-text {
+    position: absolute;
+    bottom: -10px;
+    right: -20px;
+    color: #ffff55;
+    font-size: 24px;
+    transform: rotate(-20deg);
+    text-shadow: 2px 2px 0 #3f3f00;
+    animation: bounce 0.8s infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: rotate(-20deg) scale(1); }
+    to { transform: rotate(-20deg) scale(1.1); }
+}
+
+/* Кнопки */
+.menu-buttons, .bottom-buttons, .settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 400px;
+}
+
+.row-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.mc-btn {
+    height: 40px;
+    background-color: #7d7d7d;
+    border: 2px solid;
+    border-color: #fff #000 #000 #fff;
+    color: white;
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    cursor: pointer;
+    text-shadow: 2px 2px 0 #3f3f3f;
+    width: 100%;
+}
+
+.mc-btn:hover {
+    background-color: #5c74ad;
+    border-color: #fff #000 #000 #fff;
+    color: #ffffa0;
+}
+
+.mc-btn:active {
+    border-color: #000 #fff #fff #000;
+}
+
+.mc-btn.half {
+    width: 50%;
+}
+
+/* Списки */
+.scroll-list {
+    width: 60%;
+    height: 300px;
+    background-color: rgba(0,0,0,0.5);
+    border: 2px solid #a0a0a0;
+    margin-bottom: 20px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.list-item {
+    padding: 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 22px;
+    color: #b0b0b0;
+}
+
+.list-item:hover, .list-item.selected {
+    background-color: rgba(0,0,0,1);
+    border: 1px solid #fff;
+    color: white;
+}
+
+.server-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.footer-text {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+    color: white;
+}
+
+h2 {
+    font-size: 40px;
+    margin-bottom: 20px;
+    color: #ffffff;
+    text-shadow: 2px 2px 0 #3f3f3f;
 }
