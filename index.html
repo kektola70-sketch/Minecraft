@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft JS Final</title>
+    <title>Minecraft JS Final Fixed</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -62,21 +62,27 @@
         </div>
     </div>
 
-    <!-- МЕНЮ (Все экраны) -->
+    <!-- МЕНЮ (КОНТЕЙНЕР) -->
     <div id="menu-container">
         
-        <!-- ГЛАВНОЕ МЕНЮ -->
+        <!-- ГЛАВНОЕ МЕНЮ (ВОССТАНОВЛЕНО) -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Menu Update!</div>
+                <div class="splash-text" id="splash-text">Menu Fixed!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
-                <button class="mc-btn" onclick="showScreen('settings')">Настройки</button>
+                <button class="mc-btn" onclick="showScreen('multiplayer')">Сетевая игра</button>
+                
+                <div class="row-buttons">
+                    <button class="mc-btn half" onclick="showScreen('settings')">Настройки</button>
+                    <button class="mc-btn half" onclick="showScreen('language')">Язык</button>
+                </div>
+                
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Release 1.0.0</div>
+            <div class="footer-text">Release 1.0.1</div>
         </div>
 
         <!-- ИГРОВОЕ МЕНЮ (ПАУЗА) -->
@@ -100,50 +106,3 @@
                 
                 <label>Читы:</label>
                 <button class="mc-btn">Читы: ВЫКЛ</button>
-            </div>
-            <div class="bottom-buttons">
-                <button class="mc-btn" onclick="startLanWorld()">Открыть мир</button>
-                <button class="mc-btn" onclick="showScreen('pause-menu')">Отмена</button>
-            </div>
-        </div>
-
-        <!-- СОЗДАНИЕ МИРА -->
-        <div id="create-world-screen" class="screen">
-            <h2>Создать Новый Мир</h2>
-            <div class="create-options">
-                <label>Название мира:</label>
-                <input type="text" class="input-field" value="Новый Мир">
-                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
-            </div>
-            <div class="bottom-buttons">
-                <button class="mc-btn" onclick="createAndStartWorld()">Создать Мир</button>
-                <button class="mc-btn" onclick="showScreen('singleplayer')">Отмена</button>
-            </div>
-        </div>
-
-        <!-- ОДИНОЧНАЯ ИГРА -->
-        <div id="singleplayer-screen" class="screen">
-            <h2>Выбор мира</h2>
-            <div class="scroll-list"></div>
-            <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('create-world')">Создать Новый Мир</button>
-                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
-            </div>
-        </div>
-
-        <!-- НАСТРОЙКИ -->
-        <div id="settings-screen" class="screen">
-            <h2>Настройки</h2>
-            <div class="settings-grid">
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 4</button>
-                <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
-            </div>
-            <div class="bottom-buttons"><button class="mc-btn" onclick="backFromSettings()">Готово</button></div>
-        </div>
-    </div>
-
-    <div id="game-canvas-container"></div>
-    <script src="inventory.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
