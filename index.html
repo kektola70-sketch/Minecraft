@@ -7,20 +7,32 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     
-    <!-- Библиотека 3D графики -->
+    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Библиотека для генерации ландшафта -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
 <body>
 
-    <!-- Интерфейс игры (Прицел и инфо) -->
+    <!-- Интерфейс игры -->
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">FPS: 60 | XYZ: 0, 0, 0</div>
+        
+        <!-- Хотбар (9 слотов) -->
+        <div id="hotbar-container">
+            <div class="hotbar-slot active" data-slot="0"></div>
+            <div class="hotbar-slot" data-slot="1"></div>
+            <div class="hotbar-slot" data-slot="2"></div>
+            <div class="hotbar-slot" data-slot="3"></div>
+            <div class="hotbar-slot" data-slot="4"></div>
+            <div class="hotbar-slot" data-slot="5"></div>
+            <div class="hotbar-slot" data-slot="6"></div>
+            <div class="hotbar-slot" data-slot="7"></div>
+            <div class="hotbar-slot" data-slot="8"></div>
+        </div>
     </div>
 
-    <!-- Управление для мобильных устройств -->
+    <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="control-row">
@@ -31,96 +43,87 @@
                 <button class="control-btn" id="btn-back">▼</button>
                 <button class="control-btn" id="btn-right">▶</button>
             </div>
+            <div class="control-row" style="margin-top:5px;">
+                <button class="control-btn menu-btn" onclick="openMenuFromGame()">☰</button>
+            </div>
         </div>
         
         <div class="action-btns">
-            <button class="control-btn" id="btn-up">↑</button>
-            <button class="control-btn" id="btn-down">↓</button>
-            <button class="control-btn menu-btn" onclick="openMenuFromGame()">☰</button>
+            <div class="vertical-actions">
+                <button class="control-btn action-big" id="btn-break" style="background: #ff5555;">⛏️</button>
+                <button class="control-btn action-big" id="btn-place" style="background: #55ff55;">🧱</button>
+            </div>
+            <div class="jump-actions">
+                <button class="control-btn" id="btn-up">↑</button>
+                <button class="control-btn" id="btn-down">↓</button>
+            </div>
         </div>
     </div>
 
-    <!-- Контейнер меню (перекрывает игру) -->
+    <!-- МЕНЮ -->
     <div id="menu-container">
-        
         <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">JavaScript Edition!</div>
+                <div class="splash-text" id="splash-text">JS Edition!</div>
             </div>
-            
             <div class="menu-buttons">
-                <button class="mc-btn" onclick="showScreen('singleplayer')" data-lang="singleplayer">Одиночная игра</button>
-                <button class="mc-btn" onclick="showScreen('multiplayer')" data-lang="multiplayer">Сетевая игра</button>
-                
+                <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
+                <button class="mc-btn" onclick="showScreen('multiplayer')">Сетевая игра</button>
                 <div class="row-buttons">
-                    <button class="mc-btn half" onclick="showScreen('settings')" data-lang="settings">Настройки</button>
-                    <button class="mc-btn half" onclick="showScreen('language')" data-lang="language">Язык</button>
+                    <button class="mc-btn half" onclick="showScreen('settings')">Настройки</button>
+                    <button class="mc-btn half" onclick="showScreen('language')">Язык</button>
                 </div>
-                
-                <button class="mc-btn" onclick="exitGame()" data-lang="quit">Выйти</button>
+                <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            
-            <div class="footer-text">Minecraft JS Edition Alpha 0.0.4</div>
+            <div class="footer-text">Alpha 0.0.5</div>
         </div>
 
-        <!-- ОДИНОЧНАЯ ИГРА -->
+        <!-- Подменю -->
         <div id="singleplayer-screen" class="screen">
-            <h2 data-lang="select_world">Выбор мира</h2>
-            <div class="scroll-list">
-                <div class="list-item selected">New World (Creative)</div>
-                <div class="list-item">Survival World</div>
-            </div>
+            <h2>Выбор мира</h2>
+            <div class="scroll-list"><div class="list-item selected">Creative World</div></div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="startGame()" data-lang="play_world">Играть в выбранном мире</button>
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
+                <button class="mc-btn" onclick="startGame()">Играть</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
             </div>
         </div>
 
-        <!-- СЕТЕВАЯ ИГРА -->
         <div id="multiplayer-screen" class="screen">
-            <h2 data-lang="multiplayer">Сетевая игра</h2>
-            <div class="scroll-list">
-                <div class="list-item server-item">
-                    <span>Hypixel Clone</span> <span style="color:#0f0">12ms</span>
-                </div>
-            </div>
+            <h2>Сетевая игра</h2>
+            <div class="scroll-list"></div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="alert('Coming soon!')">Подключиться</button>
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
             </div>
         </div>
 
-        <!-- НАСТРОЙКИ -->
         <div id="settings-screen" class="screen">
-            <h2 data-lang="settings">Настройки</h2>
+            <h2>Настройки</h2>
             <div class="settings-grid">
-                <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render: 8</button>
-                <button class="mc-btn" id="btn-music" onclick="toggleSetting('music')">Music: OFF</button>
+                <button class="mc-btn" onclick="alert('FOV changed')">FOV: 75</button>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
             </div>
         </div>
 
-         <!-- ЯЗЫК -->
          <div id="language-screen" class="screen">
-            <h2 data-lang="language">Язык</h2>
+            <h2>Язык</h2>
             <div class="scroll-list">
-                <div class="list-item" onclick="setLanguage('ru')">Русский (Russia)</div>
-                <div class="list-item" onclick="setLanguage('en')">English (US)</div>
+                <div class="list-item">Русский</div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
             </div>
         </div>
     </div>
 
-    <!-- Канвас игры -->
+    <!-- Канвас -->
     <div id="game-canvas-container"></div>
 
+    <!-- Скрипты: Сначала инвентарь, потом основной -->
+    <script src="inventory.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
