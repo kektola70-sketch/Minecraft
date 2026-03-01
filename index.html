@@ -13,10 +13,13 @@
 </head>
 <body>
 
-    <!-- Интерфейс игры (HUD) -->
+    <!-- HUD Игры -->
     <div id="game-ui">
         <div id="crosshair">+</div>
-        <div id="debug-info">FPS: 60 | Seed: <span id="seed-display">0</span> | XYZ: 0, 0, 0</div>
+        <div id="debug-info">
+            <span id="debug-mode">Creative</span> | FPS: 60<br>
+            XYZ: <span id="xyz-pos">0, 0, 0</span>
+        </div>
         
         <!-- Хотбар -->
         <div id="hotbar-container">
@@ -35,9 +38,7 @@
     <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
-            <div class="control-row">
-                <button class="control-btn" id="btn-fwd">▲</button>
-            </div>
+            <div class="control-row"><button class="control-btn" id="btn-fwd">▲</button></div>
             <div class="control-row">
                 <button class="control-btn" id="btn-left">◀</button>
                 <button class="control-btn" id="btn-back">▼</button>
@@ -47,80 +48,99 @@
                 <button class="control-btn menu-btn" onclick="openMenuFromGame()">☰</button>
             </div>
         </div>
-        
         <div class="action-btns">
             <div class="vertical-actions">
                 <button class="control-btn action-big" id="btn-break" style="background: rgba(255, 85, 85, 0.5);">⛏️</button>
                 <button class="control-btn action-big" id="btn-place" style="background: rgba(85, 255, 85, 0.5);">🧱</button>
             </div>
             <div class="jump-actions">
-                <button class="control-btn" id="btn-up">↑</button>
-                <button class="control-btn" id="btn-down">↓</button>
+                <button class="control-btn" id="btn-jump">Space</button>
+                <button class="control-btn" id="btn-shift">Shift</button>
             </div>
         </div>
     </div>
 
     <!-- МЕНЮ -->
     <div id="menu-container">
+        <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Procedural Gen!</div>
+                <div class="splash-text" id="splash-text">Full Update!</div>
             </div>
             <div class="menu-buttons">
-                <button class="mc-btn" onclick="showScreen('singleplayer')" data-lang="singleplayer">Одиночная игра</button>
-                <button class="mc-btn" onclick="showScreen('multiplayer')" data-lang="multiplayer">Сетевая игра</button>
+                <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
+                <button class="mc-btn" onclick="showScreen('multiplayer')">Сетевая игра</button>
                 <div class="row-buttons">
-                    <button class="mc-btn half" onclick="showScreen('settings')" data-lang="settings">Настройки</button>
-                    <button class="mc-btn half" onclick="showScreen('language')" data-lang="language">Язык</button>
+                    <button class="mc-btn half" onclick="showScreen('settings')">Настройки</button>
+                    <button class="mc-btn half" onclick="showScreen('language')">Язык</button>
                 </div>
-                <button class="mc-btn" onclick="exitGame()" data-lang="quit">Выйти</button>
+                <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Alpha 0.0.7</div>
+            <div class="footer-text">Alpha 0.0.8</div>
         </div>
 
+        <!-- ОДИНОЧНАЯ ИГРА: СПИСОК -->
         <div id="singleplayer-screen" class="screen">
-            <h2 data-lang="select_world">Выбор мира</h2>
+            <h2>Выбор мира</h2>
             <div class="scroll-list">
-                <div class="list-item selected">New Random World</div>
+                <!-- Пока пусто, создаем новый -->
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="startGame()" data-lang="play_world">Генерация мира</button>
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
+                <button class="mc-btn" onclick="showScreen('create-world')">Создать Новый Мир</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
             </div>
         </div>
 
-        <div id="multiplayer-screen" class="screen">
-            <h2 data-lang="multiplayer">Сетевая игра</h2>
-            <div class="scroll-list">
-                <div class="list-item server-item"><span>Hypixel Clone</span> <span style="color:#0f0">12ms</span></div>
+        <!-- СОЗДАНИЕ МИРА (НОВОЕ) -->
+        <div id="create-world-screen" class="screen">
+            <h2>Создать Новый Мир</h2>
+            
+            <div class="create-options">
+                <label>Название мира:</label>
+                <input type="text" class="input-field" value="Новый Мир">
+                
+                <label>Ключ генерации (Seed):</label>
+                <input type="text" id="seed-input" class="input-field" placeholder="Оставьте пустым для случайного">
+
+                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
+                <div class="desc-text" id="gamemode-desc">Поиск ресурсов, крафт, уровни и голод.</div>
+                
+                <button class="mc-btn" id="btn-worldtype" onclick="cycleWorldType()">Тип мира: По умолчанию</button>
+
+                <button class="mc-btn" onclick="alert('Настройка слоев пока недоступна в этой версии')">Настройка слоев...</button>
+                <button class="mc-btn" onclick="alert('Игр��вые правила: День/Ночь - Вкл.')">Правила мира...</button>
             </div>
+
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
+                <button class="mc-btn" onclick="createAndStartWorld()">Создать Новый Мир</button>
+                <button class="mc-btn" onclick="showScreen('singleplayer')">Отмена</button>
             </div>
+        </div>
+
+        <!-- Остальные экраны (Сетевая, Настройки и т.д.) -->
+        <div id="multiplayer-screen" class="screen">
+            <h2>Сетевая игра</h2>
+            <div class="scroll-list"><div class="list-item">Hypixel Clone (Offline)</div></div>
+            <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button></div>
         </div>
 
         <div id="settings-screen" class="screen">
-            <h2 data-lang="settings">Настройки</h2>
+            <h2>Настройки</h2>
             <div class="settings-grid">
                 <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
                 <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render: 8</button>
-                <button class="mc-btn" id="btn-music" onclick="toggleSetting('music')">Music: OFF</button>
             </div>
-            <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
-            </div>
+            <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Готово</button></div>
         </div>
 
          <div id="language-screen" class="screen">
-            <h2 data-lang="language">Язык</h2>
+            <h2>Язык</h2>
             <div class="scroll-list">
-                <div class="list-item" onclick="setLanguage('ru')">Русский (Russia)</div>
-                <div class="list-item" onclick="setLanguage('en')">English (US)</div>
+                <div class="list-item" onclick="setLanguage('ru')">Русский</div>
+                <div class="list-item" onclick="setLanguage('en')">English</div>
             </div>
-            <div class="bottom-buttons">
-                <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="done">Готово</button>
-            </div>
+            <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Готово</button></div>
         </div>
     </div>
 
