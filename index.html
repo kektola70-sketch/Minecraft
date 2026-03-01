@@ -6,22 +6,16 @@
     <title>Minecraft JS Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    
-    <!-- Библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
 <body>
-
-    <!-- HUD Игры -->
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">
             <span id="debug-mode">Creative</span> | FPS: 60<br>
             XYZ: <span id="xyz-pos">0, 0, 0</span>
         </div>
-        
-        <!-- Хотбар -->
         <div id="hotbar-container">
             <div class="hotbar-slot active" data-slot="0"></div>
             <div class="hotbar-slot" data-slot="1"></div>
@@ -35,7 +29,6 @@
         </div>
     </div>
 
-    <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="control-row"><button class="control-btn" id="btn-fwd">▲</button></div>
@@ -60,13 +53,11 @@
         </div>
     </div>
 
-    <!-- МЕНЮ -->
     <div id="menu-container">
-        <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Full Update!</div>
+                <div class="splash-text" id="splash-text">Better Terrain!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
@@ -77,48 +68,35 @@
                 </div>
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Alpha 0.0.8</div>
+            <div class="footer-text">Alpha 0.0.9 - Terrain Update</div>
         </div>
 
-        <!-- ОДИНОЧНАЯ ИГРА: СПИСОК -->
         <div id="singleplayer-screen" class="screen">
             <h2>Выбор мира</h2>
-            <div class="scroll-list">
-                <!-- Пока пусто, создаем новый -->
-            </div>
+            <div class="scroll-list"></div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="showScreen('create-world')">Создать Новый Мир</button>
                 <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
             </div>
         </div>
 
-        <!-- СОЗДАНИЕ МИРА (НОВОЕ) -->
         <div id="create-world-screen" class="screen">
             <h2>Создать Новый Мир</h2>
-            
             <div class="create-options">
                 <label>Название мира:</label>
                 <input type="text" class="input-field" value="Новый Мир">
-                
                 <label>Ключ генерации (Seed):</label>
-                <input type="text" id="seed-input" class="input-field" placeholder="Оставьте пустым для случайного">
-
-                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
-                <div class="desc-text" id="gamemode-desc">Поиск ресурсов, крафт, уровни и голод.</div>
-                
+                <input type="text" id="seed-input" class="input-field" placeholder="Пусто = Случайно">
+                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Творческий</button>
+                <div class="desc-text" id="gamemode-desc">Неограниченные ресурсы, полет.</div>
                 <button class="mc-btn" id="btn-worldtype" onclick="cycleWorldType()">Тип мира: По умолчанию</button>
-
-                <button class="mc-btn" onclick="alert('Настройка слоев пока недоступна в этой версии')">Настройка слоев...</button>
-                <button class="mc-btn" onclick="alert('Игр��вые правила: День/Ночь - Вкл.')">Правила мира...</button>
             </div>
-
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="createAndStartWorld()">Создать Новый Мир</button>
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Отмена</button>
             </div>
         </div>
 
-        <!-- Остальные экраны (Сетевая, Настройки и т.д.) -->
         <div id="multiplayer-screen" class="screen">
             <h2>Сетевая игра</h2>
             <div class="scroll-list"><div class="list-item">Hypixel Clone (Offline)</div></div>
@@ -145,7 +123,6 @@
     </div>
 
     <div id="game-canvas-container"></div>
-
     <script src="inventory.js"></script>
     <script src="script.js"></script>
 </body>
