@@ -9,26 +9,32 @@ let moveState = { forward: false, backward: false, left: false, right: false, up
 
 // Игрок и Физика
 let playerStats = { health: 20, food: 20 };
-let velocity = new THREE.Vector3(0, 0, 0); // Вектор скорости
+let velocity = new THREE.Vector3(0, 0, 0); 
 let onGround = false;
 let handMesh;
 let isSwinging = false;
 let swingProgress = 0;
 
 // Бесконечный мир
-let chunks = {}; // Объект для хранения чанков {"x,z": [meshes]}
-let activeMeshes = []; // Массив всех мешей для Raycaster
+let chunks = {}; 
+let activeMeshes = []; 
 const chunkSize = 16;
-let renderDistance = 3; // Радиус чанков (мало для производительности)
+let renderDistance = 3; // Оптимизация: дальность 3 чанка
+
+// Оптимизация
+let lastChunkUpdatePos = new THREE.Vector3();
+let globalGeometry; // Глобальная геометрия для всех блоков
+let fpsTime = performance.now();
+let fpsFrames = 0;
 
 let gameConfig = { seed: 12345, mode: 'survival', type: 'default' };
 let blockMaterials = {}; 
 let simplex;
 
-document.getElementById('splash-text').innerText = "Infinite Chunks!";
+document.getElementById('splash-text').innerText = "High FPS!";
 
 /* ==========================================
-   ГЕНЕРАТОР ТЕКСТУР (FIX BLACK BLOCKS)
+   ГЕНЕРАТОР ТЕКСТУР
    ========================================== */
 function createTexture(colorHex, noiseAmount = 20) {
     const size = 64;
@@ -36,12 +42,8 @@ function createTexture(colorHex, noiseAmount = 20) {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    
-    // Основной цвет
     ctx.fillStyle = colorHex;
     ctx.fillRect(0, 0, size, size);
-    
-    // Шум
     for (let i = 0; i < 400; i++) {
         const x = Math.floor(Math.random() * size);
         const y = Math.floor(Math.random() * size);
@@ -49,16 +51,13 @@ function createTexture(colorHex, noiseAmount = 20) {
         ctx.fillStyle = (Math.random() > 0.5 ? '#000000' : '#ffffff') + Math.floor(alpha * 255).toString(16).padStart(2,'0');
         ctx.fillRect(x, y, 2, 2);
     }
-    
     const texture = new THREE.CanvasTexture(canvas);
-    texture.magFilter = THREE.NearestFilter; // Пиксельный вид
+    texture.magFilter = THREE.NearestFilter;
     return texture;
 }
 
 function initMaterials() {
-    // Генерируем текстуры процедурно, чтобы не было черных блоков
     const texGrassTop = createTexture('#567d46');
-    const texGrassSide = createTexture('#567d46'); // Упростим, пусть весь блок зеленый с шумом
     const texDirt = createTexture('#795548');
     const texStone = createTexture('#808080');
     const texWood = createTexture('#8B4513');
@@ -69,7 +68,6 @@ function initMaterials() {
     const texGlass = createTexture('#ADD8E6', 5);
 
     blockMaterials['grass'] = new THREE.MeshLambertMaterial({ map: texGrassTop }); 
-    // Для оптимизации используем одну текстуру на все стороны пока что
     blockMaterials['dirt'] = new THREE.MeshLambertMaterial({ map: texDirt });
     blockMaterials['stone'] = new THREE.MeshLambertMaterial({ map: texStone });
     blockMaterials['wood'] = new THREE.MeshLambertMaterial({ map: texWood });
@@ -78,10 +76,13 @@ function initMaterials() {
     blockMaterials['brick'] = new THREE.MeshLambertMaterial({ map: texBrick });
     blockMaterials['bedrock'] = new THREE.MeshLambertMaterial({ map: texBedrock });
     blockMaterials['glass'] = new THREE.MeshLambertMaterial({ map: texGlass, transparent: true, opacity: 0.7 });
+    
+    // Оптимизация: создаем геометрию один раз
+    globalGeometry = new THREE.BoxGeometry(1, 1, 1);
 }
 
 /* ==========================================
-   МЕНЮ И СИСТЕМА
+   МЕНЮ
    ========================================== */
 function showScreen(screenId) {
     document.getElementById('menu-container').style.display = 'flex';
@@ -107,10 +108,10 @@ function createAndStartWorld() {
     const seedInput = document.getElementById('seed-input').value;
     gameConfig.seed = seedInput ? hashCode(seedInput) : Math.floor(Math.random() * 100000);
     
-    // Сброс мира
+    // Полная очистка
     Object.values(chunks).forEach(chunk => chunk.forEach(m => { 
         scene.remove(m); 
-        m.geometry.dispose(); 
+        // Не диспозим глобальную геометрию!
     }));
     chunks = {};
     activeMeshes = [];
@@ -143,9 +144,10 @@ function startGame() {
     inventory.setMode(gameConfig.mode);
     isGameRunning = true;
     
-    // Респаун на высоту
-    camera.position.set(0, 30, 0);
+    camera.position.set(0, 40, 0);
     velocity.set(0,0,0);
+    lastChunkUpdatePos.copy(camera.position);
+    updateChunks(true); // Принудительное обновление
     
     if(!isMobile) { try { document.body.requestPointerLock(); } catch(e) {} }
 }
@@ -153,8 +155,9 @@ function startGame() {
 function exitGame() { if(confirm("Закрыть?")) window.close(); }
 function toggleSetting(key) { 
     if(key === 'render') {
-        renderDistance = renderDistance === 4 ? 8 : 4;
+        renderDistance = renderDistance === 3 ? 5 : 3;
         document.getElementById('btn-render').innerText = "Render Dist: " + renderDistance;
+        scene.fog.far = renderDistance * 16 + 20;
     }
 }
 
@@ -171,17 +174,15 @@ function initGame() {
 
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio); // Можно поставить 1 для супер-оптимизации
     document.getElementById('game-canvas-container').appendChild(renderer.domElement);
 
-    // ОСВЕЩЕНИЕ (Исправляет черные блоки)
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
     hemiLight.position.set(0, 200, 0);
     scene.add(hemiLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
     dirLight.position.set(100, 200, 100);
-    dirLight.castShadow = false; // Отключим тени для FPS
     scene.add(dirLight);
 
     inventory = new Inventory();
@@ -189,7 +190,7 @@ function initGame() {
     raycaster.far = 6; 
     simplex = new SimplexNoise();
 
-    initMaterials(); // Создаем текстуры
+    initMaterials(); 
     initHand();
     initControls();
     
@@ -225,7 +226,7 @@ function updateHand() {
 }
 
 /* ==========================================
-   БЕСКОНЕЧНЫЙ МИР
+   БЕСКОНЕЧНЫЙ МИР (ОПТИМИЗИРОВАННЫЙ)
    ========================================== */
 function getTerrainHeight(x, z) {
     let n1 = simplex.noise2D((x + gameConfig.seed)/60, (z + gameConfig.seed)/60);
@@ -234,30 +235,30 @@ function getTerrainHeight(x, z) {
     return Math.floor(h);
 }
 
-function updateChunks() {
+function updateChunks(force = false) {
+    // ОПТИМИЗАЦИЯ: Обновляем чанки только если игрок прошел 8 блоков
+    if (!force && camera.position.distanceTo(lastChunkUpdatePos) < 8) return;
+    lastChunkUpdatePos.copy(camera.position);
+
     const px = Math.floor(camera.position.x / chunkSize);
     const pz = Math.floor(camera.position.z / chunkSize);
     
-    // UI Debug
     document.getElementById('chunk-pos').innerText = `${px}, ${pz}`;
 
-    // Удаление далеких чанков
+    // Удаление
     for (let key in chunks) {
         const [cx, cz] = key.split(',').map(Number);
         if (Math.abs(cx - px) > renderDistance || Math.abs(cz - pz) > renderDistance) {
-            // Удаляем
             chunks[key].forEach(m => {
                 scene.remove(m);
-                // Удаляем из активных мешей для рейкаста
                 const idx = activeMeshes.indexOf(m);
                 if (idx > -1) activeMeshes.splice(idx, 1);
-                m.geometry.dispose();
             });
             delete chunks[key];
         }
     }
 
-    // Создание новых
+    // Создание
     for (let x = -renderDistance; x <= renderDistance; x++) {
         for (let z = -renderDistance; z <= renderDistance; z++) {
             const cx = px + x;
@@ -268,13 +269,13 @@ function updateChunks() {
             }
         }
     }
+    
+    document.getElementById('entity-count').innerText = activeMeshes.length;
 }
 
 function generateChunk(cx, cz) {
     const chunkMeshes = [];
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
     
-    // Генерируем блоки
     for (let x = 0; x < chunkSize; x++) {
         for (let z = 0; z < chunkSize; z++) {
             const wx = cx * chunkSize + x;
@@ -282,23 +283,23 @@ function generateChunk(cx, cz) {
             
             const h = getTerrainHeight(wx, wz);
             
-            // Оптимизация: рисуем только видимые блоки (верхний слой) и пару под ним
-            // Бедрок всегда на 0
-            
-            // Определяем тип поверхности
             let surfaceType = 'grass';
-            if(h < 6) surfaceType = 'sand'; // У воды
+            if(h < 6) surfaceType = 'sand';
             
-            // Рисуем столб
-            for (let y = Math.max(0, h-3); y <= h; y++) {
+            // ОПТИМИЗАЦИЯ: Рисуем только верхние 3 слоя блоков, всё равно никто не копает до дна
+            // в браузерной версии это спасает FPS.
+            const depth = 4; 
+            
+            for (let y = Math.max(0, h - depth); y <= h; y++) {
                 let type;
                 if(y === h) type = surfaceType;
                 else if(y > h-3) type = 'dirt';
                 else type = 'stone';
                 if(y===0) type = 'bedrock';
 
+                // Используем GLOBAL GEOMETRY
                 const mat = blockMaterials[type];
-                const mesh = new THREE.Mesh(geometry, mat);
+                const mesh = new THREE.Mesh(globalGeometry, mat);
                 mesh.position.set(wx, y, wz);
                 mesh.userData = { type: type };
                 
@@ -320,28 +321,15 @@ function updatePhysics() {
         return; 
     }
 
-    // Гравитация
-    velocity.y -= 0.015; // Ускорение падения
-
-    // Позиция "ног" (чуть ниже камеры)
-    const feetPos = new THREE.Vector3(camera.position.x, camera.position.y - 1.6, camera.position.z);
+    velocity.y -= 0.015; 
     
-    // Проверка коллизии вниз
     const rayDown = new THREE.Raycaster(camera.position, new THREE.Vector3(0, -1, 0), 0, 1.8);
     const intersects = rayDown.intersectObjects(activeMeshes);
     
     if (intersects.length > 0) {
-        // Мы на земле или ударились об землю
         const dist = intersects[0].distance;
-        
-        // Расстояние от глаз до земли ~1.62. Если dist <= 1.62 + погрешность
         if (velocity.y < 0 && dist < 1.65) {
-            // Расчет урона от падения
-            // Если падали быстро (например < -0.3)
-            if (velocity.y < -0.25) {
-                // Урон (упрощенно)
-                if (velocity.y < -0.5) takeDamage(Math.floor(Math.abs(velocity.y * 10)));
-            }
+            if (velocity.y < -0.5) takeDamage(Math.floor(Math.abs(velocity.y * 10)));
             
             velocity.y = 0;
             camera.position.y = intersects[0].point.y + 1.62;
@@ -355,7 +343,6 @@ function updatePhysics() {
 
     camera.position.y += velocity.y;
 
-    // Смерть в пустоте
     if (camera.position.y < -30) {
         takeDamage(20);
     }
@@ -363,11 +350,8 @@ function updatePhysics() {
 
 function takeDamage(amount) {
     if(gameConfig.mode === 'creative') return;
-    
     playerStats.health -= amount;
     updateStatsUI();
-    
-    // Вспышка красного
     document.body.style.backgroundColor = '#500';
     setTimeout(() => document.body.style.backgroundColor = '#000', 100);
 
@@ -376,7 +360,6 @@ function takeDamage(amount) {
             alert("GAME OVER! HARDCORE!");
             showScreen('main-menu');
         } else {
-            // Респаун
             camera.position.y = 40;
             velocity.y = 0;
             playerStats.health = 20;
@@ -403,6 +386,16 @@ function updateStatsUI() {
     }
 }
 
+function updateFPS() {
+    const now = performance.now();
+    fpsFrames++;
+    if (now >= fpsTime + 1000) {
+        document.getElementById('fps-counter').innerText = fpsFrames;
+        fpsFrames = 0;
+        fpsTime = now;
+    }
+}
+
 /* ==========================================
    УПРАВЛЕНИЕ
    ========================================== */
@@ -414,7 +407,7 @@ function initControls() {
         if(e.code === 'KeyD') moveState.right = true;
         if(e.code === 'Space') {
             if(gameConfig.mode === 'creative') moveState.up = true;
-            else if(onGround) velocity.y = 0.25; // Прыжок
+            else if(onGround) velocity.y = 0.25; 
         }
         if(e.code === 'ShiftLeft') moveState.down = true;
         if(e.key >= 1 && e.key <= 9) inventory.selectSlot(e.key-1);
@@ -452,7 +445,7 @@ function breakBlock() {
         if(obj.userData.type === 'bedrock' && gameConfig.mode !== 'creative') return;
         scene.remove(obj);
         activeMeshes.splice(activeMeshes.indexOf(obj), 1);
-        obj.geometry.dispose();
+        // Не диспозим геометрию, она глобальная!
     }
 }
 
@@ -461,14 +454,13 @@ function placeBlock() {
     const intersects = raycaster.intersectObjects(activeMeshes);
     if(intersects.length > 0 && intersects[0].distance < 5) {
         const p = intersects[0].point.clone().add(intersects[0].face.normal.multiplyScalar(0.5)).floor().addScalar(0.5);
-        // Коллизия с игроком
         if(Math.abs(camera.position.x - p.x) < 0.8 && Math.abs(camera.position.y - p.y) < 1.8 && Math.abs(camera.position.z - p.z) < 0.8) return;
         
         const item = inventory.getSelectedBlock();
         if(!item && gameConfig.mode !== 'creative') return;
         const type = item ? item.type : 'dirt';
         
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), blockMaterials[type]);
+        const mesh = new THREE.Mesh(globalGeometry, blockMaterials[type]);
         mesh.position.copy(p);
         mesh.userData = { type: type };
         scene.add(mesh);
@@ -479,6 +471,7 @@ function placeBlock() {
 function animate() {
     requestAnimationFrame(animate);
     if(isGameRunning) {
+        updateFPS();
         updateChunks();
         updatePhysics();
         updateHand();
