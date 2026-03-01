@@ -5,9 +5,9 @@ let scene, camera, renderer, raycaster;
 let inventory;
 let isGameInitialized = false;
 let isGameRunning = false;
+let isPaused = false; // Статус паузы
 let moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
 
-// Игрок и Физика
 let playerStats = { health: 20, food: 20 };
 let velocity = new THREE.Vector3(0, 0, 0); 
 let onGround = false;
@@ -15,15 +15,13 @@ let handMesh;
 let isSwinging = false;
 let swingProgress = 0;
 
-// Бесконечный мир
 let chunks = {}; 
 let activeMeshes = []; 
 const chunkSize = 16;
-let renderDistance = 3; // Оптимизация: дальность 3 чанка
+let renderDistance = 3;
 
-// Оптимизация
 let lastChunkUpdatePos = new THREE.Vector3();
-let globalGeometry; // Глобальная геометрия для всех блоков
+let globalGeometry; 
 let fpsTime = performance.now();
 let fpsFrames = 0;
 
@@ -31,12 +29,12 @@ let gameConfig = { seed: 12345, mode: 'survival', type: 'default' };
 let blockMaterials = {}; 
 let simplex;
 
-document.getElementById('splash-text').innerText = "High FPS!";
+document.getElementById('splash-text').innerText = "Press ESC for Menu!";
 
 /* ==========================================
    ГЕНЕРАТОР ТЕКСТУР
    ========================================== */
-function createTexture(colorHex, noiseAmount = 20) {
+function createTexture(colorHex) {
     const size = 64;
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -65,7 +63,7 @@ function initMaterials() {
     const texSand = createTexture('#F4A460');
     const texBrick = createTexture('#A52A2A');
     const texBedrock = createTexture('#111111');
-    const texGlass = createTexture('#ADD8E6', 5);
+    const texGlass = createTexture('#ADD8E6');
 
     blockMaterials['grass'] = new THREE.MeshLambertMaterial({ map: texGrassTop }); 
     blockMaterials['dirt'] = new THREE.MeshLambertMaterial({ map: texDirt });
@@ -77,24 +75,22 @@ function initMaterials() {
     blockMaterials['bedrock'] = new THREE.MeshLambertMaterial({ map: texBedrock });
     blockMaterials['glass'] = new THREE.MeshLambertMaterial({ map: texGlass, transparent: true, opacity: 0.7 });
     
-    // Оптимизация: создаем геометрию один раз
     globalGeometry = new THREE.BoxGeometry(1, 1, 1);
 }
 
 /* ==========================================
-   МЕНЮ
+   СИСТЕМА МЕНЮ И ЛОГИКА
    ========================================== */
 function showScreen(screenId) {
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-ui').style.display = 'none';
     document.getElementById('mobile-controls').style.display = 'none';
+    
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId + '-screen').classList.add('active');
-    isGameRunning = false;
+    document.getElementById(screenId).classList.add('active'); // Исправлено: передаем полный ID
+    
     if(document.pointerLockElement) document.exitPointerLock();
 }
-
-function openMenuFromGame() { showScreen('main-menu'); }
 
 const gameModes = ['survival', 'hardcore', 'creative'];
 let currentModeIndex = 0;
@@ -105,30 +101,20 @@ function cycleGameMode() {
 }
 
 function createAndStartWorld() {
-    const seedInput = document.getElementById('seed-input').value;
-    gameConfig.seed = seedInput ? hashCode(seedInput) : Math.floor(Math.random() * 100000);
-    
-    // Полная очистка
-    Object.values(chunks).forEach(chunk => chunk.forEach(m => { 
-        scene.remove(m); 
-        // Не диспозим глобальную геометрию!
-    }));
+    // Полный сброс мира
+    Object.values(chunks).forEach(chunk => chunk.forEach(m => { scene.remove(m); }));
     chunks = {};
     activeMeshes = [];
-    
     startGame();
-}
-
-function hashCode(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-    return Math.abs(hash);
 }
 
 function startGame() {
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('game-ui').style.display = 'block';
     
+    isPaused = false;
+    isGameRunning = true;
+
     playerStats = { health: 20, food: 20 };
     updateStatsUI();
     document.getElementById('stats-container').style.display = gameConfig.mode === 'creative' ? 'none' : 'flex';
@@ -142,22 +128,66 @@ function startGame() {
     }
     
     inventory.setMode(gameConfig.mode);
-    isGameRunning = true;
     
-    camera.position.set(0, 40, 0);
-    velocity.set(0,0,0);
-    lastChunkUpdatePos.copy(camera.position);
-    updateChunks(true); // Принудительное обновление
+    // Захват курсора
+    if(!isMobile) { 
+        document.body.requestPointerLock(); 
+    }
+}
+
+function pauseGame() {
+    isPaused = true;
+    showScreen('pause-menu');
+}
+
+function resumeGame() {
+    document.getElementById('menu-container').style.display = 'none';
+    document.getElementById('game-ui').style.display = 'block';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
+    if(isMobile) document.getElementById('mobile-controls').style.display = 'block';
     
-    if(!isMobile) { try { document.body.requestPointerLock(); } catch(e) {} }
+    isPaused = false;
+    document.body.requestPointerLock();
+}
+
+function saveAndQuit() {
+    // Тут можно сохранить в LocalStorage
+    isGameRunning = false;
+    showScreen('main-menu');
+}
+
+function backFromSettings() {
+    if(isGameRunning) {
+        showScreen('pause-menu');
+    } else {
+        showScreen('main-menu');
+    }
+}
+
+// LAN Logic
+let isLanPublic = false;
+function toggleLanType() {
+    isLanPublic = !isLanPublic;
+    document.getElementById('btn-lan-type').innerText = isLanPublic ? "Публично" : "Приватно";
+    document.getElementById('lan-desc').innerText = isLanPublic ? "Виден всем в сети" : "Только по приглашению";
+}
+
+function startLanWorld() {
+    alert(`Локальный сервер запущен!\nТип: ${isLanPublic ? 'Публичный' : 'Приватный'}\nIP: 192.168.0.X:25565 (Симуляция)`);
+    resumeGame();
 }
 
 function exitGame() { if(confirm("Закрыть?")) window.close(); }
+
 function toggleSetting(key) { 
     if(key === 'render') {
         renderDistance = renderDistance === 3 ? 5 : 3;
         document.getElementById('btn-render').innerText = "Render Dist: " + renderDistance;
         scene.fog.far = renderDistance * 16 + 20;
+    } else if (key === 'fov') {
+        camera.fov = camera.fov === 75 ? 90 : 75;
+        camera.updateProjectionMatrix();
+        document.getElementById('btn-fov').innerText = "FOV: " + camera.fov;
     }
 }
 
@@ -171,10 +201,11 @@ function initGame() {
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.rotation.order = 'YXZ'; 
+    camera.position.set(0, 40, 0);
 
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio); // Можно поставить 1 для супер-оптимизации
+    renderer.setPixelRatio(window.devicePixelRatio); 
     document.getElementById('game-canvas-container').appendChild(renderer.domElement);
 
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
@@ -226,25 +257,19 @@ function updateHand() {
 }
 
 /* ==========================================
-   БЕСКОНЕЧНЫЙ МИР (ОПТИМИЗИРОВАННЫЙ)
+   МИР
    ========================================== */
 function getTerrainHeight(x, z) {
-    let n1 = simplex.noise2D((x + gameConfig.seed)/60, (z + gameConfig.seed)/60);
-    let n2 = simplex.noise2D((x + gameConfig.seed)/20, (z + gameConfig.seed)/20);
+    let n1 = simplex.noise2D((x + 12345)/60, (z + 12345)/60);
+    let n2 = simplex.noise2D((x + 12345)/20, (z + 12345)/20);
     let h = (n1 * 12) + (n2 * 4) + 10;
     return Math.floor(h);
 }
 
-function updateChunks(force = false) {
-    // ОПТИМИЗАЦИЯ: Обновляем чанки только если игрок прошел 8 блоков
-    if (!force && camera.position.distanceTo(lastChunkUpdatePos) < 8) return;
-    lastChunkUpdatePos.copy(camera.position);
-
+function updateChunks() {
     const px = Math.floor(camera.position.x / chunkSize);
     const pz = Math.floor(camera.position.z / chunkSize);
     
-    document.getElementById('chunk-pos').innerText = `${px}, ${pz}`;
-
     // Удаление
     for (let key in chunks) {
         const [cx, cz] = key.split(',').map(Number);
@@ -269,27 +294,19 @@ function updateChunks(force = false) {
             }
         }
     }
-    
-    document.getElementById('entity-count').innerText = activeMeshes.length;
 }
 
 function generateChunk(cx, cz) {
     const chunkMeshes = [];
-    
     for (let x = 0; x < chunkSize; x++) {
         for (let z = 0; z < chunkSize; z++) {
             const wx = cx * chunkSize + x;
             const wz = cz * chunkSize + z;
-            
             const h = getTerrainHeight(wx, wz);
-            
             let surfaceType = 'grass';
             if(h < 6) surfaceType = 'sand';
             
-            // ОПТИМИЗАЦИЯ: Рисуем только верхние 3 слоя блоков, всё равно никто не копает до дна
-            // в браузерной версии это спасает FPS.
             const depth = 4; 
-            
             for (let y = Math.max(0, h - depth); y <= h; y++) {
                 let type;
                 if(y === h) type = surfaceType;
@@ -297,7 +314,6 @@ function generateChunk(cx, cz) {
                 else type = 'stone';
                 if(y===0) type = 'bedrock';
 
-                // Используем GLOBAL GEOMETRY
                 const mat = blockMaterials[type];
                 const mesh = new THREE.Mesh(globalGeometry, mat);
                 mesh.position.set(wx, y, wz);
@@ -313,39 +329,24 @@ function generateChunk(cx, cz) {
 }
 
 /* ==========================================
-   ФИЗИКА
+   ФИЗИКА И УПРАВЛЕНИЕ
    ========================================== */
 function updatePhysics() {
-    if (gameConfig.mode === 'creative') {
-        velocity.y = 0; 
-        return; 
-    }
-
+    if (gameConfig.mode === 'creative') { velocity.y = 0; return; }
     velocity.y -= 0.015; 
-    
     const rayDown = new THREE.Raycaster(camera.position, new THREE.Vector3(0, -1, 0), 0, 1.8);
     const intersects = rayDown.intersectObjects(activeMeshes);
-    
     if (intersects.length > 0) {
         const dist = intersects[0].distance;
         if (velocity.y < 0 && dist < 1.65) {
             if (velocity.y < -0.5) takeDamage(Math.floor(Math.abs(velocity.y * 10)));
-            
             velocity.y = 0;
             camera.position.y = intersects[0].point.y + 1.62;
             onGround = true;
-        } else {
-            onGround = false;
-        }
-    } else {
-        onGround = false;
-    }
-
+        } else onGround = false;
+    } else onGround = false;
     camera.position.y += velocity.y;
-
-    if (camera.position.y < -30) {
-        takeDamage(20);
-    }
+    if (camera.position.y < -30) takeDamage(20);
 }
 
 function takeDamage(amount) {
@@ -354,16 +355,11 @@ function takeDamage(amount) {
     updateStatsUI();
     document.body.style.backgroundColor = '#500';
     setTimeout(() => document.body.style.backgroundColor = '#000', 100);
-
     if (playerStats.health <= 0) {
         if (gameConfig.mode === 'hardcore') {
-            alert("GAME OVER! HARDCORE!");
-            showScreen('main-menu');
+            alert("GAME OVER! HARDCORE!"); showScreen('main-menu');
         } else {
-            camera.position.y = 40;
-            velocity.y = 0;
-            playerStats.health = 20;
-            updateStatsUI();
+            camera.position.y = 40; velocity.y = 0; playerStats.health = 20; updateStatsUI();
         }
     }
 }
@@ -386,19 +382,6 @@ function updateStatsUI() {
     }
 }
 
-function updateFPS() {
-    const now = performance.now();
-    fpsFrames++;
-    if (now >= fpsTime + 1000) {
-        document.getElementById('fps-counter').innerText = fpsFrames;
-        fpsFrames = 0;
-        fpsTime = now;
-    }
-}
-
-/* ==========================================
-   УПРАВЛЕНИЕ
-   ========================================== */
 function initControls() {
     document.addEventListener('keydown', e => {
         if(e.code === 'KeyW') moveState.forward = true;
@@ -411,6 +394,12 @@ function initControls() {
         }
         if(e.code === 'ShiftLeft') moveState.down = true;
         if(e.key >= 1 && e.key <= 9) inventory.selectSlot(e.key-1);
+        if(e.code === 'Escape') {
+            if(isGameRunning) {
+                if(isPaused) resumeGame();
+                else pauseGame();
+            }
+        }
     });
     document.addEventListener('keyup', e => {
         if(e.code === 'KeyW') moveState.forward = false;
@@ -420,19 +409,35 @@ function initControls() {
         if(e.code === 'Space') moveState.up = false;
         if(e.code === 'ShiftLeft') moveState.down = false;
     });
-    document.addEventListener('mousedown', e => {
-        if(!isGameRunning || e.target.closest('.hotbar-slot')) return;
-        if(document.pointerLockElement === document.body) {
-            swingHand();
-            if(e.button === 0) breakBlock();
-            if(e.button === 2) placeBlock();
-        }
-    });
+    
+    // ИСПРАВЛЕНИЕ КАМЕРЫ:
     document.addEventListener('mousemove', e => {
-        if(isGameRunning && document.pointerLockElement === document.body) {
+        // Вращаем камеру только если игра идет, не пауза, и курсор захвачен
+        if(isGameRunning && !isPaused && document.pointerLockElement === document.body) {
             camera.rotation.y -= e.movementX * 0.002;
             camera.rotation.x -= e.movementY * 0.002;
             camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+        }
+    });
+
+    document.addEventListener('mousedown', e => {
+        if(!isGameRunning || isPaused || e.target.closest('.hotbar-slot')) return;
+        
+        // Запрос захвата при клике
+        if(document.pointerLockElement !== document.body) {
+            document.body.requestPointerLock();
+            return;
+        }
+
+        swingHand();
+        if(e.button === 0) breakBlock();
+        if(e.button === 2) placeBlock();
+    });
+
+    // Обработка потери фокуса (например, Alt+Tab)
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement !== document.body && isGameRunning && !isPaused) {
+            pauseGame();
         }
     });
 }
@@ -445,7 +450,6 @@ function breakBlock() {
         if(obj.userData.type === 'bedrock' && gameConfig.mode !== 'creative') return;
         scene.remove(obj);
         activeMeshes.splice(activeMeshes.indexOf(obj), 1);
-        // Не диспозим геометрию, она глобальная!
     }
 }
 
@@ -470,8 +474,12 @@ function placeBlock() {
 
 function animate() {
     requestAnimationFrame(animate);
-    if(isGameRunning) {
-        updateFPS();
+    // Останавливаем логику игры на паузе
+    if(isGameRunning && !isPaused) {
+        const now = performance.now();
+        fpsFrames++;
+        if (now >= fpsTime + 1000) { document.getElementById('fps-counter').innerText = fpsFrames; fpsFrames = 0; fpsTime = now; }
+
         updateChunks();
         updatePhysics();
         updateHand();
