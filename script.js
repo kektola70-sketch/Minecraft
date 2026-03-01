@@ -29,7 +29,7 @@ let gameConfig = { seed: 12345, mode: 'survival', type: 'default' };
 let blockMaterials = {}; 
 let simplex;
 
-document.getElementById('splash-text').innerText = "All menus restored!";
+document.getElementById('splash-text').innerText = "Fixed Black Screen!";
 
 /* ==========================================
    ГЕНЕРАТОР ТЕКСТУР
@@ -79,17 +79,34 @@ function initMaterials() {
 }
 
 /* ==========================================
-   МЕНЮ
+   СИСТЕМА МЕНЮ И ЛОГИКА
    ========================================== */
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ЭКРАНОВ
 function showScreen(screenId) {
+    // Показываем контейнер меню
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-ui').style.display = 'none';
     document.getElementById('mobile-controls').style.display = 'none';
     
+    // Скрываем все экраны
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active'); // Исправлено (передаем полный ID)
     
-    if(screenId !== 'pause-menu') isGameRunning = false;
+    // Находим нужный экран. Если ID передан без суффикса, добавляем его.
+    let targetId = screenId;
+    if (!document.getElementById(targetId)) {
+        targetId = screenId + '-screen';
+    }
+    
+    const target = document.getElementById(targetId);
+    if (target) {
+        target.classList.add('active');
+    } else {
+        console.error("Screen not found: " + screenId);
+    }
+    
+    // Если это не меню паузы, то полностью останавливаем игру
+    if(targetId !== 'pause-menu') isGameRunning = false;
+    
     if(document.pointerLockElement) document.exitPointerLock();
 }
 
@@ -104,11 +121,10 @@ function cycleGameMode() {
 }
 
 function createAndStartWorld() {
-    // Чистим мир
+    // Полный сброс
     Object.values(chunks).forEach(chunk => chunk.forEach(m => { scene.remove(m); }));
     chunks = {};
     activeMeshes = [];
-    
     startGame();
 }
 
@@ -401,6 +417,8 @@ function initControls() {
         if(e.code === 'Space') moveState.up = false;
         if(e.code === 'ShiftLeft') moveState.down = false;
     });
+    
+    // ИСПРАВЛЕНИЕ: Мышь работает только если игра идет и не пауза
     document.addEventListener('mousemove', e => {
         if(isGameRunning && !isPaused && document.pointerLockElement === document.body) {
             camera.rotation.y -= e.movementX * 0.002;
@@ -408,13 +426,20 @@ function initControls() {
             camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
         }
     });
+
     document.addEventListener('mousedown', e => {
         if(!isGameRunning || isPaused || e.target.closest('.hotbar-slot')) return;
-        if(document.pointerLockElement !== document.body) { document.body.requestPointerLock(); return; }
+        
+        if(document.pointerLockElement !== document.body) {
+            document.body.requestPointerLock();
+            return;
+        }
+
         swingHand();
         if(e.button === 0) breakBlock();
         if(e.button === 2) placeBlock();
     });
+
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement !== document.body && isGameRunning && !isPaused) pauseGame();
     });
@@ -452,6 +477,7 @@ function placeBlock() {
 
 function animate() {
     requestAnimationFrame(animate);
+    // Рендерим всегда, но обновляем физику только не на паузе
     if(isGameRunning && !isPaused) {
         const now = performance.now();
         fpsFrames++;
