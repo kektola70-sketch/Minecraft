@@ -16,9 +16,9 @@
     <!-- Интерфейс игры (HUD) -->
     <div id="game-ui">
         <div id="crosshair">+</div>
-        <div id="debug-info">FPS: 60 | XYZ: 0, 0, 0</div>
+        <div id="debug-info">FPS: 60 | Seed: <span id="seed-display">0</span> | XYZ: 0, 0, 0</div>
         
-        <!-- Хотбар (9 слотов) -->
+        <!-- Хотбар -->
         <div id="hotbar-container">
             <div class="hotbar-slot active" data-slot="0"></div>
             <div class="hotbar-slot" data-slot="1"></div>
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <!-- Мобильное управление (Скрыто в меню) -->
+    <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="control-row">
@@ -60,14 +60,12 @@
         </div>
     </div>
 
-    <!-- МЕНЮ (Главный контейнер) -->
+    <!-- МЕНЮ -->
     <div id="menu-container">
-        
-        <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Fixed Edition!</div>
+                <div class="splash-text" id="splash-text">Procedural Gen!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')" data-lang="singleplayer">Одиночная игра</button>
@@ -78,36 +76,30 @@
                 </div>
                 <button class="mc-btn" onclick="exitGame()" data-lang="quit">Выйти</button>
             </div>
-            <div class="footer-text">Alpha 0.0.6</div>
+            <div class="footer-text">Alpha 0.0.7</div>
         </div>
 
-        <!-- ОДИНОЧНАЯ ИГРА -->
         <div id="singleplayer-screen" class="screen">
             <h2 data-lang="select_world">Выбор мира</h2>
             <div class="scroll-list">
-                <div class="list-item selected">New World (Creative)</div>
-                <div class="list-item">Survival World (Test)</div>
-                <div class="list-item">My First Build</div>
+                <div class="list-item selected">New Random World</div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="startGame()" data-lang="play_world">Играть в выбранном мире</button>
+                <button class="mc-btn" onclick="startGame()" data-lang="play_world">Генерация мира</button>
                 <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
             </div>
         </div>
 
-        <!-- СЕТЕВАЯ ИГРА -->
         <div id="multiplayer-screen" class="screen">
             <h2 data-lang="multiplayer">Сетевая игра</h2>
             <div class="scroll-list">
                 <div class="list-item server-item"><span>Hypixel Clone</span> <span style="color:#0f0">12ms</span></div>
-                <div class="list-item server-item"><span>Localhost</span> <span style="color:#0f0">0ms</span></div>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="showScreen('main-menu')" data-lang="cancel">Отмена</button>
             </div>
         </div>
 
-        <!-- НАСТРОЙКИ -->
         <div id="settings-screen" class="screen">
             <h2 data-lang="settings">Настройки</h2>
             <div class="settings-grid">
@@ -120,7 +112,6 @@
             </div>
         </div>
 
-         <!-- ЯЗЫК -->
          <div id="language-screen" class="screen">
             <h2 data-lang="language">Язык</h2>
             <div class="scroll-list">
@@ -133,10 +124,8 @@
         </div>
     </div>
 
-    <!-- Канвас (3D мир) -->
     <div id="game-canvas-container"></div>
 
-    <!-- Подключаем скрипты -->
     <script src="inventory.js"></script>
     <script src="script.js"></script>
 </body>
