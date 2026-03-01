@@ -10,12 +10,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 </head>
 <body>
+
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">
             <span id="debug-mode">Creative</span> | FPS: 60<br>
             XYZ: <span id="xyz-pos">0, 0, 0</span>
         </div>
+        
+        <!-- СТАТИСТИКА (Сердца и Еда) -->
+        <div id="stats-container">
+            <div id="health-bar">
+                <!-- Генерируется JS -->
+            </div>
+            <div id="food-bar">
+                <!-- Генерируется JS -->
+            </div>
+        </div>
+
         <div id="hotbar-container">
             <div class="hotbar-slot active" data-slot="0"></div>
             <div class="hotbar-slot" data-slot="1"></div>
@@ -29,6 +41,7 @@
         </div>
     </div>
 
+    <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="control-row"><button class="control-btn" id="btn-fwd">▲</button></div>
@@ -53,11 +66,12 @@
         </div>
     </div>
 
+    <!-- МЕНЮ -->
     <div id="menu-container">
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Better Terrain!</div>
+                <div class="splash-text" id="splash-text">Realistic Update!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
@@ -68,7 +82,7 @@
                 </div>
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Alpha 0.0.9 - Terrain Update</div>
+            <div class="footer-text">Beta 0.1.0</div>
         </div>
 
         <div id="singleplayer-screen" class="screen">
