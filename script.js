@@ -5,7 +5,7 @@ let scene, camera, renderer, raycaster;
 let inventory;
 let isGameInitialized = false;
 let isGameRunning = false;
-let isPaused = false; // Статус паузы
+let isPaused = false; 
 let moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
 
 let playerStats = { health: 20, food: 20 };
@@ -29,7 +29,7 @@ let gameConfig = { seed: 12345, mode: 'survival', type: 'default' };
 let blockMaterials = {}; 
 let simplex;
 
-document.getElementById('splash-text').innerText = "Press ESC for Menu!";
+document.getElementById('splash-text').innerText = "All menus restored!";
 
 /* ==========================================
    ГЕНЕРАТОР ТЕКСТУР
@@ -79,7 +79,7 @@ function initMaterials() {
 }
 
 /* ==========================================
-   СИСТЕМА МЕНЮ И ЛОГИКА
+   МЕНЮ
    ========================================== */
 function showScreen(screenId) {
     document.getElementById('menu-container').style.display = 'flex';
@@ -87,10 +87,13 @@ function showScreen(screenId) {
     document.getElementById('mobile-controls').style.display = 'none';
     
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active'); // Исправлено: передаем полный ID
+    document.getElementById(screenId).classList.add('active'); // Исправлено (передаем полный ID)
     
+    if(screenId !== 'pause-menu') isGameRunning = false;
     if(document.pointerLockElement) document.exitPointerLock();
 }
+
+function openMenuFromGame() { showScreen('main-menu'); }
 
 const gameModes = ['survival', 'hardcore', 'creative'];
 let currentModeIndex = 0;
@@ -101,10 +104,11 @@ function cycleGameMode() {
 }
 
 function createAndStartWorld() {
-    // Полный сброс мира
+    // Чистим мир
     Object.values(chunks).forEach(chunk => chunk.forEach(m => { scene.remove(m); }));
     chunks = {};
     activeMeshes = [];
+    
     startGame();
 }
 
@@ -129,10 +133,8 @@ function startGame() {
     
     inventory.setMode(gameConfig.mode);
     
-    // Захват курсора
-    if(!isMobile) { 
-        document.body.requestPointerLock(); 
-    }
+    // Захват только на ПК
+    if(!isMobile) document.body.requestPointerLock();
 }
 
 function pauseGame() {
@@ -147,33 +149,29 @@ function resumeGame() {
     if(isMobile) document.getElementById('mobile-controls').style.display = 'block';
     
     isPaused = false;
+    isGameRunning = true;
     document.body.requestPointerLock();
 }
 
 function saveAndQuit() {
-    // Тут можно сохранить в LocalStorage
     isGameRunning = false;
     showScreen('main-menu');
 }
 
 function backFromSettings() {
-    if(isGameRunning) {
-        showScreen('pause-menu');
-    } else {
-        showScreen('main-menu');
-    }
+    if(isGameRunning && isPaused) showScreen('pause-menu');
+    else showScreen('main-menu');
 }
 
-// LAN Logic
+// LAN
 let isLanPublic = false;
 function toggleLanType() {
     isLanPublic = !isLanPublic;
     document.getElementById('btn-lan-type').innerText = isLanPublic ? "Публично" : "Приватно";
-    document.getElementById('lan-desc').innerText = isLanPublic ? "Виден всем в сети" : "Только по приглашению";
+    document.getElementById('lan-desc').innerText = isLanPublic ? "Виден всем" : "Только по приглашению";
 }
-
 function startLanWorld() {
-    alert(`Локальный сервер запущен!\nТип: ${isLanPublic ? 'Публичный' : 'Приватный'}\nIP: 192.168.0.X:25565 (Симуляция)`);
+    alert("Сервер запущен (LAN simulation)");
     resumeGame();
 }
 
@@ -270,7 +268,6 @@ function updateChunks() {
     const px = Math.floor(camera.position.x / chunkSize);
     const pz = Math.floor(camera.position.z / chunkSize);
     
-    // Удаление
     for (let key in chunks) {
         const [cx, cz] = key.split(',').map(Number);
         if (Math.abs(cx - px) > renderDistance || Math.abs(cz - pz) > renderDistance) {
@@ -282,16 +279,12 @@ function updateChunks() {
             delete chunks[key];
         }
     }
-
-    // Создание
     for (let x = -renderDistance; x <= renderDistance; x++) {
         for (let z = -renderDistance; z <= renderDistance; z++) {
             const cx = px + x;
             const cz = pz + z;
             const key = `${cx},${cz}`;
-            if (!chunks[key]) {
-                generateChunk(cx, cz);
-            }
+            if (!chunks[key]) generateChunk(cx, cz);
         }
     }
 }
@@ -318,7 +311,6 @@ function generateChunk(cx, cz) {
                 const mesh = new THREE.Mesh(globalGeometry, mat);
                 mesh.position.set(wx, y, wz);
                 mesh.userData = { type: type };
-                
                 scene.add(mesh);
                 chunkMeshes.push(mesh);
                 activeMeshes.push(mesh);
@@ -409,36 +401,22 @@ function initControls() {
         if(e.code === 'Space') moveState.up = false;
         if(e.code === 'ShiftLeft') moveState.down = false;
     });
-    
-    // ИСПРАВЛЕНИЕ КАМЕРЫ:
     document.addEventListener('mousemove', e => {
-        // Вращаем камеру только если игра идет, не пауза, и курсор захвачен
         if(isGameRunning && !isPaused && document.pointerLockElement === document.body) {
             camera.rotation.y -= e.movementX * 0.002;
             camera.rotation.x -= e.movementY * 0.002;
             camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
         }
     });
-
     document.addEventListener('mousedown', e => {
         if(!isGameRunning || isPaused || e.target.closest('.hotbar-slot')) return;
-        
-        // Запрос захвата при клике
-        if(document.pointerLockElement !== document.body) {
-            document.body.requestPointerLock();
-            return;
-        }
-
+        if(document.pointerLockElement !== document.body) { document.body.requestPointerLock(); return; }
         swingHand();
         if(e.button === 0) breakBlock();
         if(e.button === 2) placeBlock();
     });
-
-    // Обработка потери фокуса (например, Alt+Tab)
     document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== document.body && isGameRunning && !isPaused) {
-            pauseGame();
-        }
+        if (document.pointerLockElement !== document.body && isGameRunning && !isPaused) pauseGame();
     });
 }
 
@@ -474,7 +452,6 @@ function placeBlock() {
 
 function animate() {
     requestAnimationFrame(animate);
-    // Останавливаем логику игры на паузе
     if(isGameRunning && !isPaused) {
         const now = performance.now();
         fpsFrames++;
