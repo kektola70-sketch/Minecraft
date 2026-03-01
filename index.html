@@ -106,3 +106,88 @@
                 
                 <label>Читы:</label>
                 <button class="mc-btn">Читы: ВЫКЛ</button>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="startLanWorld()">Открыть мир</button>
+                <button class="mc-btn" onclick="showScreen('pause-menu')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- ОДИНОЧНАЯ ИГРА (ВОССТАНОВЛЕН СПИСОК) -->
+        <div id="singleplayer-screen" class="screen">
+            <h2>Выбор мира</h2>
+            <div class="scroll-list">
+                <div class="list-item selected">Survival World (Cheats: OFF)</div>
+                <div class="list-item">Creative Build 1</div>
+                <div class="list-item" style="color: #aaa;">Hardcore Try (Dead)</div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="showScreen('create-world')">Создать Новый Мир</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- СОЗДАНИЕ МИРА -->
+        <div id="create-world-screen" class="screen">
+            <h2>Создать Новый Мир</h2>
+            <div class="create-options">
+                <label>Название мира:</label>
+                <input type="text" class="input-field" value="Новый Мир">
+                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="createAndStartWorld()">Создать Мир</button>
+                <button class="mc-btn" onclick="showScreen('singleplayer')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- СЕТЕВАЯ ИГРА (ВОССТАНОВЛЕНА) -->
+        <div id="multiplayer-screen" class="screen">
+            <h2>Сетевая игра</h2>
+            <div class="scroll-list">
+                <div class="list-item" style="display:flex; justify-content:space-between;">
+                    <span>Hypixel Clone</span><span style="color:#0f0">14ms</span>
+                </div>
+                <div class="list-item" style="display:flex; justify-content:space-between;">
+                    <span>Localhost</span><span style="color:#0f0">0ms</span>
+                </div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="alert('Connection failed: Server offline')">Подключиться</button>
+                <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
+            </div>
+        </div>
+
+        <!-- НАСТРОЙКИ -->
+        <div id="settings-screen" class="screen">
+            <h2>Настройки</h2>
+            <div class="settings-grid">
+                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 4</button>
+                <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
+                <button class="mc-btn" onclick="alert('Music: OFF')">Music: OFF</button>
+                <button class="mc-btn" onclick="alert('Difficulty: Normal')">Difficulty: Normal</button>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="backFromSettings()">Готово</button>
+            </div>
+        </div>
+
+        <!-- ЯЗЫК (ВОССТАНОВЛЕН) -->
+        <div id="language-screen" class="screen">
+            <h2>Язык (Language)</h2>
+            <div class="scroll-list">
+                <div class="list-item selected">Русский (Russia)</div>
+                <div class="list-item">English (US)</div>
+                <div class="list-item">Deutsch (Germany)</div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-canvas-container"></div>
+    <script src="inventory.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
