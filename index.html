@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+</body>
+э<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft JS Edition</title>
+    <title>Minecraft JS Infinite</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,21 +15,18 @@
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">
-            <span id="debug-mode">Creative</span> | FPS: 60<br>
-            XYZ: <span id="xyz-pos">0, 0, 0</span>
+            <span id="debug-mode">Creative</span><br>
+            XYZ: <span id="xyz-pos">0, 0, 0</span><br>
+            Chunk: <span id="chunk-pos">0, 0</span>
         </div>
         
-        <!-- СТАТИСТИКА (Сердца и Еда) -->
         <div id="stats-container">
-            <div id="health-bar">
-                <!-- Генерируется JS -->
-            </div>
-            <div id="food-bar">
-                <!-- Генерируется JS -->
-            </div>
+            <div id="health-bar"></div>
+            <div id="food-bar"></div>
         </div>
 
         <div id="hotbar-container">
+            <!-- 9 Слотов -->
             <div class="hotbar-slot active" data-slot="0"></div>
             <div class="hotbar-slot" data-slot="1"></div>
             <div class="hotbar-slot" data-slot="2"></div>
@@ -41,7 +39,6 @@
         </div>
     </div>
 
-    <!-- Мобильное управление -->
     <div id="mobile-controls">
         <div class="d-pad">
             <div class="control-row"><button class="control-btn" id="btn-fwd">▲</button></div>
@@ -66,23 +63,18 @@
         </div>
     </div>
 
-    <!-- МЕНЮ -->
     <div id="menu-container">
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Realistic Update!</div>
+                <div class="splash-text" id="splash-text">Infinite World!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
-                <button class="mc-btn" onclick="showScreen('multiplayer')">Сетевая игра</button>
-                <div class="row-buttons">
-                    <button class="mc-btn half" onclick="showScreen('settings')">Настройки</button>
-                    <button class="mc-btn half" onclick="showScreen('language')">Язык</button>
-                </div>
+                <button class="mc-btn" onclick="showScreen('settings')">Настройки</button>
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Beta 0.1.0</div>
+            <div class="footer-text">Beta 0.2.0 - Infinite Update</div>
         </div>
 
         <div id="singleplayer-screen" class="screen">
@@ -98,39 +90,22 @@
             <h2>Создать Новый Мир</h2>
             <div class="create-options">
                 <label>Название мира:</label>
-                <input type="text" class="input-field" value="Новый Мир">
-                <label>Ключ генерации (Seed):</label>
-                <input type="text" id="seed-input" class="input-field" placeholder="Пусто = Случайно">
-                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Творческий</button>
-                <div class="desc-text" id="gamemode-desc">Неограниченные ресурсы, полет.</div>
-                <button class="mc-btn" id="btn-worldtype" onclick="cycleWorldType()">Тип мира: По умолчанию</button>
+                <input type="text" class="input-field" value="Бесконечный Мир">
+                <label>Ключ (Seed):</label>
+                <input type="text" id="seed-input" class="input-field" placeholder="Оставьте пустым">
+                <button class="mc-btn" id="btn-gamemode" onclick="cycleGameMode()">Режим: Выживание</button>
+                <div class="desc-text" id="gamemode-desc">Осторожно, можно упасть!</div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="createAndStartWorld()">Создать Новый Мир</button>
+                <button class="mc-btn" onclick="createAndStartWorld()">Создать Мир</button>
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Отмена</button>
             </div>
-        </div>
-
-        <div id="multiplayer-screen" class="screen">
-            <h2>Сетевая игра</h2>
-            <div class="scroll-list"><div class="list-item">Hypixel Clone (Offline)</div></div>
-            <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button></div>
         </div>
 
         <div id="settings-screen" class="screen">
             <h2>Настройки</h2>
             <div class="settings-grid">
-                <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render: 8</button>
-            </div>
-            <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Готово</button></div>
-        </div>
-
-         <div id="language-screen" class="screen">
-            <h2>Язык</h2>
-            <div class="scroll-list">
-                <div class="list-item" onclick="setLanguage('ru')">Русский</div>
-                <div class="list-item" onclick="setLanguage('en')">English</div>
+                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 4</button>
             </div>
             <div class="bottom-buttons"><button class="mc-btn" onclick="showScreen('main-menu')">Готово</button></div>
         </div>
