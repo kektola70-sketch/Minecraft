@@ -8,26 +8,20 @@ let isGameInitialized = false;
 let isGameRunning = false;
 let moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
 
-// КОНФИГУРАЦИЯ МИРА
-let gameConfig = {
-    seed: 12345,
-    mode: 'survival', // 'creative', 'survival', 'hardcore'
-    type: 'default'   // 'default', 'flat'
-};
-
+let gameConfig = { seed: 12345, mode: 'creative', type: 'default' };
 const translations = {
     ru: { singleplayer: "Одиночная игра", multiplayer: "Сетевая игра", settings: "Настройки", language: "Язык", quit: "Выйти" },
     en: { singleplayer: "Singleplayer", multiplayer: "Multiplayer", settings: "Settings", language: "Language", quit: "Quit Game" }
 };
 let currentLang = 'ru';
 let gameSettings = { fov: 75, renderDist: 8, music: false };
+let simplex; // Шумовая функция
 
-document.getElementById('splash-text').innerText = ["Game Modes!", "Superflat!", "Physics!", "Hardcore!"][Math.floor(Math.random()*4)];
+document.getElementById('splash-text').innerText = ["Big Hills!", "Water & Sand!", "Trees!", "Octave Noise!"][Math.floor(Math.random()*4)];
 
 /* ==========================================
-   МЕНЮ И СОЗДАНИЕ МИРА
+   МЕНЮ
    ========================================== */
-
 function showScreen(screenId) {
     document.getElementById('menu-container').style.display = 'flex';
     document.getElementById('game-ui').style.display = 'none';
@@ -40,13 +34,12 @@ function showScreen(screenId) {
 
 function openMenuFromGame() { showScreen('main-menu'); }
 
-// ЛОГИКА МЕНЮ СОЗДАНИЯ МИРА
-const gameModes = ['survival', 'hardcore', 'creative'];
+const gameModes = ['creative', 'survival', 'hardcore'];
 const modeNames = { survival: "Выживание", hardcore: "Хардкор", creative: "Творческий" };
 const modeDescs = { 
-    survival: "Поиск ресурсов, крафт, уровни, здоровье и голод.",
-    hardcore: "То же, что и Выживание, но с одной жизнью (Сложно!).",
-    creative: "Неограниченные ресурсы, свободный полет и мгновенное ломание."
+    survival: "Ресурсы, голод, гравитация.",
+    hardcore: "Одна жизнь, сложно.",
+    creative: "Полет, бессмертие, строительство."
 };
 let currentModeIndex = 0;
 
@@ -55,8 +48,6 @@ function cycleGameMode() {
     let mode = gameModes[currentModeIndex];
     document.getElementById('btn-gamemode').innerText = "Режим: " + modeNames[mode];
     document.getElementById('gamemode-desc').innerText = modeDescs[mode];
-    
-    // Красный цвет для Хардкора
     if(mode === 'hardcore') document.getElementById('btn-gamemode').style.color = '#ff5555';
     else document.getElementById('btn-gamemode').style.color = 'white';
 }
@@ -64,7 +55,6 @@ function cycleGameMode() {
 const worldTypes = ['default', 'flat'];
 const typeNames = { default: "По умолчанию", flat: "Суперплоский" };
 let currentTypeIndex = 0;
-
 function cycleWorldType() {
     currentTypeIndex = (currentTypeIndex + 1) % worldTypes.length;
     let type = worldTypes[currentTypeIndex];
@@ -72,25 +62,19 @@ function cycleWorldType() {
 }
 
 function createAndStartWorld() {
-    // 1. Считываем настройки
     const seedInput = document.getElementById('seed-input').value;
-    // Если пусто, генерируем случайный, иначе хешируем строку в число
     gameConfig.seed = seedInput ? hashCode(seedInput) : Math.floor(Math.random() * 100000);
     gameConfig.mode = gameModes[currentModeIndex];
     gameConfig.type = worldTypes[currentTypeIndex];
 
-    // 2. Обновляем UI
     let modeLabel = gameConfig.mode.charAt(0).toUpperCase() + gameConfig.mode.slice(1);
-    if(gameConfig.mode === 'hardcore') modeLabel = "HARDCORE";
     document.getElementById('debug-mode').innerText = modeLabel;
     if(gameConfig.mode === 'hardcore') document.getElementById('debug-mode').style.color = 'red';
     else document.getElementById('debug-mode').style.color = 'white';
 
-    // 3. Запускаем
     startGame();
 }
 
-// Простой хеш для строк
 function hashCode(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -119,7 +103,7 @@ function startGame() {
 }
 
 function exitGame() { if(confirm("Закрыть окно?")) window.close(); }
-function toggleSetting(key) { alert("Setting " + key); } // Заглушка, можно оставить старый код
+function toggleSetting(key) { alert("Setting " + key); }
 function setLanguage(lang) { alert("Lang: " + lang); }
 
 /* ==========================================
@@ -129,7 +113,7 @@ function setLanguage(lang) { alert("Lang: " + lang); }
 function initGame() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.Fog(0x87CEEB, 10, 60);
+    scene.fog = new THREE.Fog(0x87CEEB, 15, 60);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.rotation.order = 'YXZ'; 
@@ -138,7 +122,7 @@ function initGame() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('game-canvas-container').appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
     dirLight.position.set(50, 100, 50);
@@ -146,7 +130,10 @@ function initGame() {
 
     inventory = new Inventory();
     raycaster = new THREE.Raycaster();
-    raycaster.far = gameConfig.mode === 'creative' ? 6 : 4; 
+    raycaster.far = gameConfig.mode === 'creative' ? 8 : 5; 
+
+    // Инициализация шума
+    simplex = new SimplexNoise();
 
     generateChunk();
     animate();
@@ -155,77 +142,158 @@ function initGame() {
 function resetWorld() {
     for (let mesh of terrainMeshes) {
         scene.remove(mesh);
-        mesh.geometry.dispose();
-        mesh.material.dispose();
+        if(mesh.geometry) mesh.geometry.dispose();
+        if(mesh.material) mesh.material.dispose();
     }
     terrainMeshes = [];
     generateChunk();
 }
 
-// Утилита для получения высоты ландшафта в точке (x, z)
-function getTerrainHeight(x, z) {
-    if (gameConfig.type === 'flat') return 4; // Плоский мир всегда на высоте 4 (bedrock+dirt+dirt+grass)
+// Улучшенная функция шума с Октавами (Fractal Noise)
+function getNoise(x, z) {
+    if (gameConfig.type === 'flat') return 4;
     
-    // Дублируем логику шума
-    const simplex = new SimplexNoise();
-    let value = simplex.noise2D((x + gameConfig.seed) / 20, (z + gameConfig.seed) / 20);
-    return Math.floor(value * 4) + 8;
+    // Октава 1: Большие горы и равнины (низкая частота)
+    let n1 = simplex.noise2D((x + gameConfig.seed) / 50, (z + gameConfig.seed) / 50);
+    // Октава 2: Мелкие детали (высокая частота)
+    let n2 = simplex.noise2D((x + gameConfig.seed) / 20, (z + gameConfig.seed) / 20);
+    
+    // Смешивание: Большой шум * 10 блоков + Мелкий шум * 4 блока
+    let height = (n1 * 10) + (n2 * 4);
+    
+    // Поднимаем уровень земли, чтобы не было отрицательных значений часто
+    return Math.floor(height + 10); 
+}
+
+function createBlock(x, y, z, color, type) {
+    // Используем один geometry для всех (можно оптимизировать InstancedMesh, но пока так)
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshLambertMaterial({ color: color });
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.set(x, y, z);
+    cube.userData = { type: type };
+    scene.add(cube);
+    terrainMeshes.push(cube);
+}
+
+function generateTree(x, y, z) {
+    // Ствол
+    for (let i = 0; i < 4; i++) {
+        createBlock(x, y + i + 1, z, 0xA0522D, 'wood');
+    }
+    // Листва
+    for (let lx = x - 2; lx <= x + 2; lx++) {
+        for (let lz = z - 2; lz <= z + 2; lz++) {
+            for (let ly = y + 3; ly <= y + 4; ly++) {
+                if (Math.abs(lx - x) === 2 && Math.abs(lz - z) === 2 && Math.random() > 0.5) continue; // Скругляем углы
+                createBlock(lx, ly, lz, 0x228B22, 'leaves');
+            }
+        }
+    }
+    // Верхушка листвы
+    for (let lx = x - 1; lx <= x + 1; lx++) {
+        for (let lz = z - 1; lz <= z + 1; lz++) {
+            createBlock(lx, y + 5, lz, 0x228B22, 'leaves');
+        }
+    }
 }
 
 function generateChunk() {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    
-    // Материалы
-    const matGrass = new THREE.MeshLambertMaterial({ color: 0x567d46 });
-    const matDirt = new THREE.MeshLambertMaterial({ color: 0x795548 });
-    const matStone = new THREE.MeshLambertMaterial({ color: 0x808080 });
-    const matBedrock = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const size = 40; // Размер мира (40x40 блоков)
+    const waterLevel = 5; // Уровень моря
 
-    const size = 20; 
-    
-    // Установка позиции игрока
-    if (gameConfig.type === 'flat') camera.position.set(size/2, 6, size/2);
-    else camera.position.set(size/2, 15, size/2);
+    // Стартовая позиция
+    camera.position.set(size/2, 20, size/2);
 
     for (let x = 0; x < size; x++) {
         for (let z = 0; z < size; z++) {
-            let height;
+            let height = getNoise(x, z);
             
-            // ГЕНЕРАЦИЯ В ЗАВИСИМОСТИ ОТ ТИПА
-            if (gameConfig.type === 'flat') {
-                height = 3; // 0, 1, 2, 3 (4 слоя)
-            } else {
-                height = getTerrainHeight(x, z);
+            // Если суперплоский, высота фиксирована
+            if (gameConfig.type === 'flat') height = 4;
+
+            // Заполняем столбцы (оптимизация: не рисуем всё до дна, только верхние слои)
+            // Но чтобы физика работала корректно, лучше иметь хотя бы 2-3 слоя блоков под ногами
+            
+            // Определяем тип поверхности
+            let surfaceColor = 0x567d46; // Трава
+            let surfaceType = 'grass';
+            
+            // БИОМЫ
+            if (gameConfig.type !== 'flat') {
+                if (height <= waterLevel + 1) { // Песок у воды
+                    surfaceColor = 0xF4A460;
+                    surfaceType = 'sand';
+                }
+                if (height > 18) { // Снежные горы
+                    surfaceColor = 0xFFFFFF;
+                    surfaceType = 'snow';
+                }
             }
 
-            for (let y = 0; y <= height; y++) {
-                let material;
+            // Рисуем блоки земли/камня
+            // Отрисуем от дна (или от глубины -5) до поверхности
+            let startY = Math.max(-5, height - 3); 
+            
+            // Бедрок на дне (визуально на -5)
+            if (gameConfig.type === 'flat') startY = 0;
+
+            for (let y = startY; y <= height; y++) {
+                let color;
+                let type;
+
+                if (y === height) {
+                    color = surfaceColor;
+                    type = surfaceType;
+                } else if (y > height - 3) {
+                    color = 0x795548; // Земля
+                    type = 'dirt';
+                } else {
+                    color = 0x808080; // Камень
+                    type = 'stone';
+                }
                 
-                // Слои для плоского мира
-                if (gameConfig.type === 'flat') {
-                    if (y === 0) material = matBedrock;
-                    else if (y < 3) material = matDirt;
-                    else material = matGrass;
-                } 
-                // Слои для обычного мира
-                else {
-                    if (y === 0) material = matBedrock;
-                    else if (y === height) material = matGrass;
-                    else if (y > height - 3) material = matDirt;
-                    else material = matStone;
+                // В суперплоском на 0 бедрок
+                if (gameConfig.type === 'flat' && y === 0) {
+                    color = 0x111111;
+                    type = 'bedrock';
                 }
 
-                // Визуальная оптимизация (не рисуем внутренности)
-                // Для простоты здесь рисуем все, кроме совсем глубоких
-                if (y === height || x===0 || x===size-1 || z===0 || z===size-1 || y > height-2) {
-                    const cube = new THREE.Mesh(geometry, material);
-                    cube.position.set(x, y, z);
-                    cube.userData = { type: y===0 ? 'bedrock' : 'block' };
-                    scene.add(cube);
-                    terrainMeshes.push(cube);
+                createBlock(x, y, z, color, type);
+            }
+
+            // ВОДА
+            if (gameConfig.type !== 'flat') {
+                for (let wy = height + 1; wy <= waterLevel; wy++) {
+                    // Полупрозрачная вода
+                    const wGeo = new THREE.BoxGeometry(1, 1, 1);
+                    const wMat = new THREE.MeshLambertMaterial({ color: 0x0000FF, transparent: true, opacity: 0.6 });
+                    const water = new THREE.Mesh(wGeo, wMat);
+                    water.position.set(x, wy, z);
+                    water.userData = { type: 'water' };
+                    scene.add(water);
+                    // Воду не добавляем в terrainMeshes, чтобы сквозь нее проходить, 
+                    // но тогда нельзя на нее ставить блоки.
+                    // Добавим в отдельный массив или сделаем так:
+                    terrainMeshes.push(water); 
+                }
+            }
+
+            // ДЕРЕВЬЯ
+            // Шанс появления дерева (только на траве и не в воде)
+            if (gameConfig.type !== 'flat' && surfaceType === 'grass' && height > waterLevel && Math.random() < 0.02) {
+                // Чтобы деревья не слипались, можно проверять соседей, но пока рандом
+                // Пропускаем края карты
+                if (x > 2 && x < size - 2 && z > 2 && z < size - 2) {
+                    generateTree(x, height, z);
                 }
             }
         }
+    }
+    
+    // Бедрок пол для плоского мира
+    if (gameConfig.type === 'flat') {
+        // Мы уже нарисовали слои в цикле
     }
 }
 
@@ -233,15 +301,18 @@ function generateChunk() {
 function getIntersection() {
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const intersects = raycaster.intersectObjects(terrainMeshes);
+    // Игнорируем воду для "ломания", если хотим ломать дно. Но пока сделаем, что воду ломать можно (убирать)
     return intersects.length > 0 ? intersects[0] : null;
 }
 
 function breakBlock() {
     const intersect = getIntersection();
     if (intersect) {
-        if (intersect.object.userData.type === 'bedrock' && gameConfig.mode !== 'creative') return; // Бедрок не ломается в выживании
+        if (intersect.object.userData.type === 'bedrock' && gameConfig.mode !== 'creative') return;
         scene.remove(intersect.object);
         terrainMeshes.splice(terrainMeshes.indexOf(intersect.object), 1);
+        if(intersect.object.geometry) intersect.object.geometry.dispose();
+        if(intersect.object.material) intersect.object.material.dispose();
     }
 }
 
@@ -251,70 +322,66 @@ function placeBlock() {
         const voxelId = intersect.object.position.clone().add(intersect.face.normal);
         // Коллизия с игроком
         const p = camera.position;
+        // Если блок ставится прямо в игрока - не ставим
         if (Math.abs(p.x - voxelId.x) < 0.8 && Math.abs(p.y - voxelId.y) < 1.8 && Math.abs(p.z - voxelId.z) < 0.8) return;
 
         const blockData = inventory.getSelectedBlock();
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshLambertMaterial({ color: blockData.color });
-        const cube = new THREE.Mesh(geometry, material);
-        cube.position.copy(voxelId);
-        cube.userData = { type: 'placed' };
-        scene.add(cube);
-        terrainMeshes.push(cube);
+        createBlock(voxelId.x, voxelId.y, voxelId.z, blockData.color, 'placed');
     }
 }
 
-// ФИЗИКА И ДВИЖЕНИЕ
+// УЛУЧШЕННАЯ ФИЗИКА
 function updatePhysics() {
-    // В Творческом режиме физика отключена (полет)
     if (gameConfig.mode === 'creative') return;
 
-    // Простая гравитация для Выживания/Хардкора
-    // Находим высоту земли под игроком
+    // Гравитация
     let x = Math.round(camera.position.x);
     let z = Math.round(camera.position.z);
     
-    // Поиск высоты в данной точке. 
-    // В идеале нужен Raycast вниз, но для оптимизации берем из формулы генерации или ищем в массиве мешей
-    // Используем упрощение: ищем максимальный Y в terrainMeshes по координатам X, Z
-    let groundY = -1;
+    // Ищем высоту блока под ногами игрока
+    // Проходим по массиву мешей. Это не очень эффективно, но работает.
+    // Оптимизация: искать только в столбце x, z
+    let groundHeight = -100;
     
-    // Простой поиск (медленно для больших миров, но ок для демки)
-    // Лучше использовать карту высот, но здесь пробежимся по блокам рядом
-    for(let m of terrainMeshes) {
-        if(Math.round(m.position.x) === x && Math.round(m.position.z) === z) {
-            if(m.position.y > groundY) groundY = m.position.y;
+    // Простой алгоритм: найти максимальный Y среди блоков, у которых x, z совпадают с игроком
+    // и которые находятся НИЖЕ игрока
+    
+    // Для оптимизации: если мы не двигаемся, не пересчитывать. Но пока считаем всегда.
+    
+    // Вариант 2: Raycaster вниз
+    const rayDown = new THREE.Raycaster(camera.position, new THREE.Vector3(0, -1, 0), 0, 10);
+    const intersects = rayDown.intersectObjects(terrainMeshes);
+    
+    let onGround = false;
+    
+    if (intersects.length > 0) {
+        // Расстояние до земли
+        const dist = intersects[0].distance;
+        // Высота глаз игрока ~1.6. Если dist < 1.6, мы на земле
+        if (dist <= 1.7) {
+            onGround = true;
+            camera.position.y = intersects[0].point.y + 1.7;
         }
     }
 
-    // Желаемая высота (уровень глаз = +1.6 над блоком)
-    let targetY = groundY + 2.5; // +2.5 чтобы стоять на блоке (центр блока + пол блока + рост)
-
-    // Если мы выше земли - падаем
-    if (camera.position.y > targetY) {
-        camera.position.y -= 0.15; // Скорость падения
-    } 
-    // Если упали сквозь землю - поднимаем
-    else if (camera.position.y < targetY - 0.5) {
-        camera.position.y = targetY;
+    // Если не на земле - падаем
+    // Упрощенная эмуляция velocity
+    if (!onGround) {
+        camera.position.y -= 0.15; // Сила тяжести
     }
-    
-    // Смерть в пустоте (Хардкор/Выживание)
-    if (camera.position.y < -10) {
+
+    // Смерть
+    if (camera.position.y < -15) {
         if(gameConfig.mode === 'hardcore') {
-            alert("GAME OVER! Hardcore mode.");
+            alert("GAME OVER!");
             showScreen('main-menu');
         } else {
-            // Респаун
-            camera.position.y = 20;
-            camera.position.x = 10;
-            camera.position.z = 10;
+            camera.position.set(20, 20, 20); // Респаун
         }
     }
 }
 
 function initControls() {
-    // WASD и прочее (стандарт)
     const onKey = (e, state) => {
         if(e.code === 'KeyW') moveState.forward = state;
         if(e.code === 'KeyS') moveState.backward = state;
@@ -342,7 +409,6 @@ function initControls() {
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
     });
 
-    // Мобильные
     const bindBtn = (id, key) => {
         const btn = document.getElementById(id); if(!btn) return;
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); moveState[key] = true; });
@@ -353,7 +419,6 @@ function initControls() {
     document.getElementById('btn-break').addEventListener('touchstart', (e) => { e.preventDefault(); breakBlock(); });
     document.getElementById('btn-place').addEventListener('touchstart', (e) => { e.preventDefault(); placeBlock(); });
     
-    // Свайп камеры
     let lastX = 0, lastY = 0;
     document.addEventListener('touchstart', (e) => {
         if(!e.target.classList.contains('control-btn') && !e.target.classList.contains('hotbar-slot') && !e.target.classList.contains('input-field')) {
@@ -375,9 +440,7 @@ function initControls() {
 function animate() {
     requestAnimationFrame(animate);
     if (isGameRunning) {
-        // Физика (гравитация)
         updatePhysics();
-
         const speed = 0.15;
         const angle = camera.rotation.y;
         if (moveState.forward) { camera.position.x -= Math.sin(angle)*speed; camera.position.z -= Math.cos(angle)*speed; }
@@ -385,15 +448,14 @@ function animate() {
         if (moveState.left) { camera.position.x -= Math.sin(angle+Math.PI/2)*speed; camera.position.z -= Math.cos(angle+Math.PI/2)*speed; }
         if (moveState.right) { camera.position.x += Math.sin(angle+Math.PI/2)*speed; camera.position.z += Math.cos(angle+Math.PI/2)*speed; }
         
-        // Полет вверх/вниз только в креативе
         if (gameConfig.mode === 'creative') {
             if (moveState.up) camera.position.y += speed;
             if (moveState.down) camera.position.y -= speed;
         } else {
-            // В выживании прыжок можно реализовать через импульс, пока просто "телепорт" вверх если есть коллизия
-            if (moveState.up && camera.position.y < 100) { // Простейший прыжок
-                 // camera.position.y += 0.3; // Нужна нормальная физика velocity
-            }
+            // Прыжок в выживании (если мы на земле - проверяется в updatePhysics, но для простоты здесь):
+            // Для реального прыжка нужно менять скорость (velocity.y), здесь просто двигаем вверх, 
+            // а физика потом опустит, если мы в воздухе.
+            if (moveState.up) camera.position.y += 0.25; 
         }
 
         const p = camera.position;
