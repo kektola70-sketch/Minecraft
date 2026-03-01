@@ -1,38 +1,55 @@
 /* ==========================================
-   ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+   ПЕРЕМЕННЫЕ И ДАННЫЕ
    ========================================== */
-let scene, camera, renderer;
+let scene, camera, renderer, raycaster;
 let inventory;
-let raycaster; // Для определения блока под прицелом
-
+let terrainMeshes = [];
 let isGameInitialized = false;
 let isGameRunning = false;
 let moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
 
-// Массивы для хранения мешей чанков (для оптимизации raycast)
-let terrainMeshes = [];
+const translations = {
+    ru: {
+        singleplayer: "Одиночная игра", multiplayer: "Сетевая игра", settings: "Настройки",
+        language: "Язык", quit: "Выйти", select_world: "Выбор мира", play_world: "Играть",
+        cancel: "Отмена", done: "Готово", fov_prefix: "Поле зрения: ", render_prefix: "Прорисовка: ", music_prefix: "Музыка: "
+    },
+    en: {
+        singleplayer: "Singleplayer", multiplayer: "Multiplayer", settings: "Settings",
+        language: "Language", quit: "Quit Game", select_world: "Select World", play_world: "Play",
+        cancel: "Cancel", done: "Done", fov_prefix: "FOV: ", render_prefix: "Render Dist: ", music_prefix: "Music: "
+    }
+};
+
+let currentLang = 'ru';
+let gameSettings = { fov: 75, renderDist: 8, music: false };
+
+// Сплэши
+const splashes = ["Beta version!", "Use Chrome!", "Breaking blocks!", "Not Minecraft!", "Hello!"];
+document.getElementById('splash-text').innerText = splashes[Math.floor(Math.random() * splashes.length)];
 
 /* ==========================================
-   УПРАВЛЕНИЕ ЭКРАНАМИ (ИСПРАВЛЕНИЕ ЧЕРНОГО ЭКРАНА)
+   СИСТЕМА МЕНЮ (ИСПРАВЛЕНА)
    ========================================== */
 
 function showScreen(screenId) {
-    // 1. Показываем контейнер меню
-    const menuContainer = document.getElementById('menu-container');
-    menuContainer.style.display = 'flex'; // ВАЖНО: Flex для центрирования
+    // 1. Показываем главный контейнер меню (черный экран пропадает)
+    document.getElementById('menu-container').style.display = 'flex';
     
     // 2. Скрываем интерфейс игры
     document.getElementById('game-ui').style.display = 'none';
     document.getElementById('mobile-controls').style.display = 'none';
 
-    // 3. Переключаем вкладки внутри меню
+    // 3. Переключаем активную вкладку (Main -> Settings и т.д.)
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId + '-screen').classList.add('active');
+    const target = document.getElementById(screenId + '-screen');
+    if (target) target.classList.add('active');
+    else console.error("Screen not found:", screenId); // Для отладки
     
     // 4. Останавливаем логику игры
     isGameRunning = false;
     
-    // 5. Выходим из захвата курсора
+    // 5. Выходим из захвата мыши
     if(document.pointerLockElement) document.exitPointerLock();
 }
 
@@ -47,7 +64,7 @@ function startGame() {
     // Показываем интерфейс
     document.getElementById('game-ui').style.display = 'block';
     
-    // Проверка мобильного устройства (грубая)
+    // Проверка на мобилу
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if(isMobile || window.innerWidth < 800) {
         document.getElementById('mobile-controls').style.display = 'block';
@@ -61,56 +78,78 @@ function startGame() {
     
     isGameRunning = true;
     
-    // Захват курсора (только для ПК)
     if(!isMobile) {
-        try {
-            document.body.requestPointerLock();
-        } catch(e) {}
+        try { document.body.requestPointerLock(); } catch(e) {}
     }
 }
 
-function exitGame() { if(confirm("Закрыть?")) window.close(); }
+// Настройки
+function toggleSetting(key) {
+    if (key === 'fov') gameSettings.fov = gameSettings.fov === 75 ? 90 : (gameSettings.fov === 90 ? 110 : 75);
+    else if (key === 'render') gameSettings.renderDist = gameSettings.renderDist === 8 ? 16 : (gameSettings.renderDist === 16 ? 4 : 8);
+    else if (key === 'music') gameSettings.music = !gameSettings.music;
+    
+    updateSettingsButtons();
+    
+    // Применяем настройки к игре
+    if(camera) {
+        camera.fov = gameSettings.fov;
+        camera.updateProjectionMatrix();
+        if(scene && scene.fog) scene.fog.far = gameSettings.renderDist * 10;
+    }
+}
+
+function updateSettingsButtons() {
+    const t = translations[currentLang];
+    document.getElementById('btn-fov').innerText = t.fov_prefix + gameSettings.fov;
+    document.getElementById('btn-render').innerText = t.render_prefix + gameSettings.renderDist;
+    document.getElementById('btn-music').innerText = t.music_prefix + (gameSettings.music ? "ON" : "OFF");
+}
+
+function setLanguage(lang) {
+    currentLang = lang;
+    document.querySelectorAll('[data-lang]').forEach(el => {
+        const key = el.getAttribute('data-lang');
+        if (translations[currentLang][key]) el.innerText = translations[currentLang][key];
+    });
+    updateSettingsButtons();
+}
+
+function exitGame() { if(confirm("Закрыть окно?")) window.close(); }
 
 /* ==========================================
    ИГРОВОЙ ДВИЖОК
    ========================================== */
 
 function initGame() {
-    // Сцена
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.Fog(0x87CEEB, 10, 60); // Туман
+    scene.fog = new THREE.Fog(0x87CEEB, 10, 60);
 
-    // Камера
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(16, 15, 16);
     camera.rotation.order = 'YXZ'; 
 
-    // Рендер
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     document.getElementById('game-canvas-container').appendChild(renderer.domElement);
 
-    // Свет
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
     dirLight.position.set(50, 100, 50);
     scene.add(dirLight);
 
-    // Инвентарь
     inventory = new Inventory();
-    
-    // Raycaster (луч из центра экрана)
     raycaster = new THREE.Raycaster();
-    raycaster.far = 8; // Дистанция взаимодействия (8 блоков)
+    raycaster.far = 6; 
 
-    // Генерация мира
     generateChunk();
-
-    // Цикл
     animate();
+    
+    updateSettingsButtons(); // Обновить тексты при старте
+    setLanguage('ru');
 }
 
 function generateChunk() {
@@ -121,79 +160,56 @@ function generateChunk() {
         for (let z = 0; z < 20; z++) {
             let height = Math.floor(simplex.noise2D(x/15, z/15) * 4) + 5;
             for (let y = 0; y <= height; y++) {
-                // Визуально скрываем внутренние блоки
                 if (y === height || x===0 || x===19 || z===0 || z===19) {
                     let color = (y === height) ? 0x567d46 : 0x795548;
                     const material = new THREE.MeshLambertMaterial({ color: color });
                     const cube = new THREE.Mesh(geometry, material);
                     cube.position.set(x, y, z);
                     scene.add(cube);
-                    terrainMeshes.push(cube); // Добавляем в список для взаимодействия
+                    terrainMeshes.push(cube);
                 }
             }
         }
     }
 }
 
-/* ==========================================
-   ЛОГИКА СТРОИТЕЛЬСТВА (Raycasting)
-   ========================================== */
-
+// ЛОГИКА БЛОКОВ
 function getIntersection() {
-    // Луч пускается ровно из центра камеры
     raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const intersects = raycaster.intersectObjects(terrainMeshes);
-    if (intersects.length > 0) {
-        return intersects[0];
-    }
-    return null;
+    return intersects.length > 0 ? intersects[0] : null;
 }
 
 function breakBlock() {
     const intersect = getIntersection();
     if (intersect) {
-        const object = intersect.object;
-        scene.remove(object); // Удалить из сцены
-        // Удалить из массива terrainMeshes
-        const index = terrainMeshes.indexOf(object);
-        if (index > -1) terrainMeshes.splice(index, 1);
-        
-        // Очистка памяти (важно для производительности)
-        object.geometry.dispose();
-        object.material.dispose();
+        scene.remove(intersect.object);
+        terrainMeshes.splice(terrainMeshes.indexOf(intersect.object), 1);
+        intersect.object.geometry.dispose();
+        intersect.object.material.dispose();
     }
 }
 
 function placeBlock() {
     const intersect = getIntersection();
     if (intersect) {
-        // Получаем координаты, куда ставить, на основе нормали (стороны грани)
         const voxelId = intersect.object.position.clone().add(intersect.face.normal);
         
-        // Не ставить блок в самого игрока
-        const playerPos = camera.position.clone();
-        if (Math.abs(playerPos.x - voxelId.x) < 0.8 && 
-            Math.abs(playerPos.y - voxelId.y) < 1.8 && 
-            Math.abs(playerPos.z - voxelId.z) < 0.8) {
-            return; 
-        }
+        // Проверка коллизии с игроком
+        const p = camera.position;
+        if (Math.abs(p.x - voxelId.x) < 0.8 && Math.abs(p.y - voxelId.y) < 1.8 && Math.abs(p.z - voxelId.z) < 0.8) return;
 
-        const selectedBlock = inventory.getSelectedBlock();
-        
+        const blockData = inventory.getSelectedBlock();
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshLambertMaterial({ color: selectedBlock.color });
+        const material = new THREE.MeshLambertMaterial({ color: blockData.color });
         const cube = new THREE.Mesh(geometry, material);
         cube.position.copy(voxelId);
-        
         scene.add(cube);
         terrainMeshes.push(cube);
     }
 }
 
-/* ==========================================
-   УПРАВЛЕНИЕ
-   ========================================== */
-
+// УПРАВЛЕНИЕ
 function initControls() {
     // Клавиатура
     document.addEventListener('keydown', (e) => {
@@ -203,7 +219,6 @@ function initControls() {
         if(e.code === 'KeyD') moveState.right = true;
         if(e.code === 'Space') moveState.up = true;
         if(e.code === 'ShiftLeft') moveState.down = true;
-        // Цифры для слотов
         if(e.key >= 1 && e.key <= 9) inventory.selectSlot(parseInt(e.key) - 1);
     });
     
@@ -216,14 +231,12 @@ function initControls() {
         if(e.code === 'ShiftLeft') moveState.down = false;
     });
 
-    // Мышь (ПК) - ЛКМ ломает, ПКМ ставит
+    // Мышь
     document.addEventListener('mousedown', (e) => {
-        if (!isGameRunning) return;
-        if (e.target.classList.contains('hotbar-slot')) return; // Игнорировать клики по UI
-        
+        if (!isGameRunning || e.target.classList.contains('hotbar-slot')) return;
         if (document.pointerLockElement === document.body) {
-            if (e.button === 0) breakBlock(); // ЛКМ
-            if (e.button === 2) placeBlock(); // ПКМ
+            if (e.button === 0) breakBlock();
+            if (e.button === 2) placeBlock();
         }
     });
 
@@ -234,23 +247,10 @@ function initControls() {
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
     });
 
-    document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== document.body && isGameRunning) {
-             // Если потеряли фокус на ПК, не выбрасываем в меню сразу, 
-             // просто останавливаем вращение камерой.
-        }
-    });
-
-    // Колесико мыши (смена слотов)
-    document.addEventListener('wheel', (e) => {
-        if(!isGameRunning) return;
-        if(e.deltaY > 0) inventory.selectSlot(inventory.selectedSlot + 1);
-        else inventory.selectSlot(inventory.selectedSlot - 1);
-    });
-
-    // --- МОБИЛЬНЫЕ КНОПКИ ---
+    // Мобильное управление
     const bindBtn = (id, key) => {
         const btn = document.getElementById(id);
+        if(!btn) return;
         btn.addEventListener('touchstart', (e) => { e.preventDefault(); moveState[key] = true; });
         btn.addEventListener('touchend', (e) => { e.preventDefault(); moveState[key] = false; });
     };
@@ -258,56 +258,42 @@ function initControls() {
     bindBtn('btn-left', 'left'); bindBtn('btn-right', 'right');
     bindBtn('btn-up', 'up'); bindBtn('btn-down', 'down');
 
-    // Кнопки действий
-    document.getElementById('btn-break').addEventListener('touchstart', (e) => {
-        e.preventDefault(); breakBlock();
-    });
-    document.getElementById('btn-place').addEventListener('touchstart', (e) => {
-        e.preventDefault(); placeBlock();
-    });
+    document.getElementById('btn-break').addEventListener('touchstart', (e) => { e.preventDefault(); breakBlock(); });
+    document.getElementById('btn-place').addEventListener('touchstart', (e) => { e.preventDefault(); placeBlock(); });
 
     // Свайп камеры
-    let lastTouchX = 0, lastTouchY = 0;
+    let lastX = 0, lastY = 0;
     document.addEventListener('touchstart', (e) => {
         if(!e.target.classList.contains('control-btn') && !e.target.classList.contains('hotbar-slot')) {
-            lastTouchX = e.touches[0].pageX;
-            lastTouchY = e.touches[0].pageY;
+            lastX = e.touches[0].pageX; lastY = e.touches[0].pageY;
         }
     }, {passive: false});
 
     document.addEventListener('touchmove', (e) => {
-        if (!isGameRunning) return;
-        if(e.target.classList.contains('control-btn') || e.target.classList.contains('hotbar-slot')) return;
-        
-        const dx = e.touches[0].pageX - lastTouchX;
-        const dy = e.touches[0].pageY - lastTouchY;
-        
+        if (!isGameRunning || e.target.classList.contains('control-btn')) return;
+        const dx = e.touches[0].pageX - lastX;
+        const dy = e.touches[0].pageY - lastY;
         camera.rotation.y -= dx * 0.005;
         camera.rotation.x -= dy * 0.005;
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-        
-        lastTouchX = e.touches[0].pageX;
-        lastTouchY = e.touches[0].pageY;
+        lastX = e.touches[0].pageX; lastY = e.touches[0].pageY;
     }, {passive: false});
 }
 
 function animate() {
     requestAnimationFrame(animate);
-
     if (isGameRunning) {
         const speed = 0.15;
         const angle = camera.rotation.y;
-        
         if (moveState.forward) { camera.position.x -= Math.sin(angle)*speed; camera.position.z -= Math.cos(angle)*speed; }
         if (moveState.backward) { camera.position.x += Math.sin(angle)*speed; camera.position.z += Math.cos(angle)*speed; }
         if (moveState.left) { camera.position.x -= Math.sin(angle+Math.PI/2)*speed; camera.position.z -= Math.cos(angle+Math.PI/2)*speed; }
         if (moveState.right) { camera.position.x += Math.sin(angle+Math.PI/2)*speed; camera.position.z += Math.cos(angle+Math.PI/2)*speed; }
         if (moveState.up) camera.position.y += speed;
         if (moveState.down) camera.position.y -= speed;
-
+        
         const p = camera.position;
         document.getElementById('debug-info').innerText = `XYZ: ${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
     }
-
     if(renderer && scene) renderer.render(scene, camera);
 }
