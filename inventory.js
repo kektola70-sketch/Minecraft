@@ -1,40 +1,34 @@
 class Inventory {
     constructor() {
         this.selectedSlot = 0;
-        this.mode = 'creative'; // По умолчанию
+        this.mode = 'survival';
         
-        // Ссылки на текстуры (используем GitHub CDN для надежности)
-        const path = "https://raw.githubusercontent.com/joshwcomeau/react-three-fiber-minecraft/master/public/textures/";
-        // Запасной путь для простых блоков, если первых нет
-        
+        // Генерация текстур (чтобы не было черных блоков)
+        // Используем Data URIs
         this.blocks = [
-            { id: 1, name: "Grass", texture: path + "grass.jpg", side: path + "grass_dirt.jpg", type: 'grass' },
-            { id: 2, name: "Dirt", texture: path + "dirt.jpg", type: 'dirt' },
-            { id: 3, name: "Stone", texture: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/cobblestone.png", type: 'stone' },
-            { id: 4, name: "Wood", texture: path + "wood.jpg", type: 'wood' },
-            { id: 5, name: "Leaves", texture: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/grass_dirt.png", color: 0x228B22, type: 'leaves' }, // Тинтуем зелёным
-            { id: 6, name: "Sand", texture: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/sand.png", type: 'sand' },
-            { id: 7, name: "Glass", texture: path + "glass.png", transparent: true, type: 'glass' },
-            { id: 8, name: "Brick", texture: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/minecraft/brick.png", type: 'brick' },
-            { id: 9, name: "Obsidian", texture: path + "obsidian.jpg", type: 'obsidian' }
+            { id: 1, name: "Grass", type: 'grass' },
+            { id: 2, name: "Dirt", type: 'dirt' },
+            { id: 3, name: "Stone", type: 'stone' },
+            { id: 4, name: "Wood", type: 'wood' },
+            { id: 5, name: "Leaves", type: 'leaves' },
+            { id: 6, name: "Sand", type: 'sand' },
+            { id: 7, name: "Glass", type: 'glass' },
+            { id: 8, name: "Brick", type: 'brick' },
+            { id: 9, name: "Bedrock", type: 'bedrock' }
         ];
 
-        // Слоты инвентаря (могут быть пустыми)
         this.slots = new Array(9).fill(null);
-        
         this.initUI();
     }
 
     setMode(mode) {
         this.mode = mode;
         if (mode === 'survival' || mode === 'hardcore') {
-            // В выживании инвентарь пустой
             this.slots.fill(null);
+            // Дадим 1 блок земли для старта
+            this.slots[0] = this.blocks[1]; 
         } else {
-            // В креативе заполняем всеми блоками
-            for(let i=0; i<9; i++) {
-                this.slots[i] = this.blocks[i] || null;
-            }
+            for(let i=0; i<9; i++) this.slots[i] = this.blocks[i] || null;
         }
         this.updateUI();
     }
@@ -49,21 +43,18 @@ class Inventory {
     }
 
     updateUI() {
+        // Мы будем брать текстуры из глобального кэша материалов (blockMaterials),
+        // который генерируется в script.js. Так как Inventory загружается раньше,
+        // сделаем заглушку цветом, а script.js потом обновит.
         const slotsUI = document.querySelectorAll('.hotbar-slot');
         slotsUI.forEach((slot, index) => {
             const item = this.slots[index];
             if (item) {
-                // Если есть текстура, ставим на фон
-                if (item.texture) {
-                    slot.style.backgroundImage = `url('${item.texture}')`;
-                    slot.style.backgroundColor = 'transparent';
-                } else if (item.color) {
-                    slot.style.backgroundColor = '#' + item.color.toString(16).padStart(6,'0');
-                    slot.style.backgroundImage = 'none';
-                }
+                // Простая цветовая заглушка для UI
+                const colors = { grass: '#567d46', dirt: '#795548', stone: '#888', wood: '#A0522D', leaves: '#228B22', sand: '#F4A460', glass: '#ADD8E6', brick: '#A52A2A', bedrock: '#000' };
+                slot.style.backgroundColor = colors[item.type] || '#fff';
             } else {
-                slot.style.backgroundImage = 'none';
-                slot.style.backgroundColor = 'rgba(0,0,0,0.3)';
+                slot.style.backgroundColor = 'transparent';
             }
         });
     }
@@ -73,23 +64,7 @@ class Inventory {
         this.selectedSlot = index;
         document.querySelectorAll('.hotbar-slot').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.hotbar-slot')[this.selectedSlot].classList.add('active');
-        
-        // Обновляем руку (визуально) в script.js, отправляя событие или просто читая getSelectedBlock
     }
 
     getSelectedBlock() { return this.slots[this.selectedSlot]; }
-    
-    // Метод для подбора блоков (на будущее)
-    addItem(blockType) {
-        // Найти первый пустой слот
-        const emptyIndex = this.slots.indexOf(null);
-        if (emptyIndex !== -1) {
-             // Находим блок по типу
-             const block = this.blocks.find(b => b.type === blockType);
-             if(block) {
-                 this.slots[emptyIndex] = block;
-                 this.updateUI();
-             }
-        }
-    }
 }
