@@ -24,9 +24,14 @@ body { margin: 0; overflow: hidden; background-color: #000; font-family: 'VT323'
 #menu-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; background-image: url('https://assets.codepen.io/13471/dirt-bg.jpg'); background-size: 128px; display: flex; justify-content: center; align-items: center; }
 .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 600px; background-color: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 5px; border: 2px solid #555; }
 .screen.active { display: flex; }
-.menu-buttons, .bottom-buttons, .create-options { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+.menu-buttons, .bottom-buttons, .create-options, .settings-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+.row-buttons { display: flex; gap: 10px; }
 .mc-btn { height: 40px; width: 100%; background-color: #7d7d7d; border: 2px solid; border-color: #fff #000 #000 #fff; color: white; font-family: 'VT323', monospace; font-size: 24px; cursor: pointer; }
 .mc-btn:hover { background-color: #5c74ad; color: #ffffa0; }
+.mc-btn.half { width: 50%; }
+.scroll-list { width: 100%; height: 250px; background-color: rgba(0,0,0,0.5); border: 2px solid #a0a0a0; margin-bottom: 20px; overflow-y: auto; padding: 10px; }
+.list-item { padding: 10px; border: 1px solid transparent; cursor: pointer; font-size: 22px; color: #b0b0b0; }
+.list-item:hover { background-color: rgba(0,0,0,1); border: 1px solid #fff; color: white; }
 .input-field { background-color: #000; border: 2px solid #a0a0a0; color: white; font-family: 'VT323'; font-size: 20px; padding: 5px; margin-bottom: 10px; }
 .desc-text { color: #a0a0a0; font-size: 18px; margin-bottom: 10px; text-align: center; font-style: italic; }
 label { color: #a0a0a0; font-size: 20px; align-self: flex-start; }
