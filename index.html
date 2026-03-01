@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Minecraft JS Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -18,6 +18,26 @@
     <div id="game-ui">
         <div id="crosshair">+</div>
         <div id="debug-info">FPS: 60 | XYZ: 0, 0, 0</div>
+    </div>
+
+    <!-- Управление для мобильных устройств -->
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <div class="control-row">
+                <button class="control-btn" id="btn-fwd">▲</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="btn-left">◀</button>
+                <button class="control-btn" id="btn-back">▼</button>
+                <button class="control-btn" id="btn-right">▶</button>
+            </div>
+        </div>
+        
+        <div class="action-btns">
+            <button class="control-btn" id="btn-up">↑</button>
+            <button class="control-btn" id="btn-down">↓</button>
+            <button class="control-btn menu-btn" onclick="openMenuFromGame()">☰</button>
+        </div>
     </div>
 
     <!-- Контейнер меню (перекрывает игру) -->
@@ -42,7 +62,7 @@
                 <button class="mc-btn" onclick="exitGame()" data-lang="quit">Выйти</button>
             </div>
             
-            <div class="footer-text">Minecraft JS Edition Alpha 0.0.3</div>
+            <div class="footer-text">Minecraft JS Edition Alpha 0.0.4</div>
         </div>
 
         <!-- ОДИНОЧНАЯ ИГРА -->
@@ -98,7 +118,7 @@
         </div>
     </div>
 
-    <!-- Канвас игры будет создан здесь скриптом автоматически, но мы можем задать контейнер -->
+    <!-- Канвас игры -->
     <div id="game-canvas-container"></div>
 
     <script src="script.js"></script>
