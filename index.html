@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft JS Final Fixed</title>
+    <title>Minecraft JS Final Fix</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -62,14 +62,14 @@
         </div>
     </div>
 
-    <!-- МЕНЮ (КОНТЕЙНЕР) -->
+    <!-- МЕНЮ -->
     <div id="menu-container">
         
-        <!-- ГЛАВНОЕ МЕНЮ (ВОССТАНОВЛЕНО) -->
+        <!-- ГЛАВНОЕ МЕНЮ -->
         <div id="main-menu" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">MINECRAFT</h1>
-                <div class="splash-text" id="splash-text">Menu Fixed!</div>
+                <div class="splash-text" id="splash-text">Bug Fixed!</div>
             </div>
             <div class="menu-buttons">
                 <button class="mc-btn" onclick="showScreen('singleplayer')">Одиночная игра</button>
@@ -82,7 +82,7 @@
                 
                 <button class="mc-btn" onclick="exitGame()">Выйти</button>
             </div>
-            <div class="footer-text">Release 1.0.1</div>
+            <div class="footer-text">Release 1.0.2 Stable</div>
         </div>
 
         <!-- ИГРОВОЕ МЕНЮ (ПАУЗА) -->
@@ -98,14 +98,11 @@
 
         <!-- ОТКРЫТЬ ДЛЯ СЕТИ -->
         <div id="lan-screen" class="screen">
-            <h2>Открыть мир для сети</h2>
+            <h2>Открыть для сети</h2>
             <div class="create-options">
-                <label>Режим доступа:</label>
+                <label>Режим:</label>
                 <button class="mc-btn" id="btn-lan-type" onclick="toggleLanType()">Приватно</button>
                 <div class="desc-text" id="lan-desc">Только по приглашению</div>
-                
-                <label>Читы:</label>
-                <button class="mc-btn">Читы: ВЫКЛ</button>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="startLanWorld()">Открыть мир</button>
@@ -113,13 +110,12 @@
             </div>
         </div>
 
-        <!-- ОДИНОЧНАЯ ИГРА (ВОССТАНОВЛЕН СПИСОК) -->
+        <!-- ОДИНОЧНАЯ ИГРА -->
         <div id="singleplayer-screen" class="screen">
             <h2>Выбор мира</h2>
             <div class="scroll-list">
-                <div class="list-item selected">Survival World (Cheats: OFF)</div>
-                <div class="list-item">Creative Build 1</div>
-                <div class="list-item" style="color: #aaa;">Hardcore Try (Dead)</div>
+                <div class="list-item selected">Survival World</div>
+                <div class="list-item">Creative Build</div>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="showScreen('create-world')">Создать Новый Мир</button>
@@ -141,19 +137,13 @@
             </div>
         </div>
 
-        <!-- СЕТЕВАЯ ИГРА (ВОССТАНОВЛЕНА) -->
+        <!-- СЕТЕВАЯ ИГРА -->
         <div id="multiplayer-screen" class="screen">
             <h2>Сетевая игра</h2>
             <div class="scroll-list">
-                <div class="list-item" style="display:flex; justify-content:space-between;">
-                    <span>Hypixel Clone</span><span style="color:#0f0">14ms</span>
-                </div>
-                <div class="list-item" style="display:flex; justify-content:space-between;">
-                    <span>Localhost</span><span style="color:#0f0">0ms</span>
-                </div>
+                <div class="list-item"><span>Hypixel Clone</span> <span style="color:#0f0; float:right;">14ms</span></div>
             </div>
             <div class="bottom-buttons">
-                <button class="mc-btn" onclick="alert('Connection failed: Server offline')">Подключиться</button>
                 <button class="mc-btn" onclick="showScreen('main-menu')">Отмена</button>
             </div>
         </div>
@@ -162,23 +152,20 @@
         <div id="settings-screen" class="screen">
             <h2>Настройки</h2>
             <div class="settings-grid">
-                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 4</button>
+                <button class="mc-btn" id="btn-render" onclick="toggleSetting('render')">Render Dist: 3</button>
                 <button class="mc-btn" id="btn-fov" onclick="toggleSetting('fov')">FOV: 75</button>
-                <button class="mc-btn" onclick="alert('Music: OFF')">Music: OFF</button>
-                <button class="mc-btn" onclick="alert('Difficulty: Normal')">Difficulty: Normal</button>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="backFromSettings()">Готово</button>
             </div>
         </div>
 
-        <!-- ЯЗЫК (ВОССТАНОВЛЕН) -->
+        <!-- ЯЗЫК -->
         <div id="language-screen" class="screen">
             <h2>Язык (Language)</h2>
             <div class="scroll-list">
-                <div class="list-item selected">Русский (Russia)</div>
-                <div class="list-item">English (US)</div>
-                <div class="list-item">Deutsch (Germany)</div>
+                <div class="list-item selected">Русский</div>
+                <div class="list-item">English</div>
             </div>
             <div class="bottom-buttons">
                 <button class="mc-btn" onclick="showScreen('main-menu')">Готово</button>
